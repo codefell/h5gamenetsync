@@ -9,19 +9,32 @@
     <script type="text/javascript" src="libs/threejs/three.js"></script>
     <style>
         #WebGLoutput0 {
-            border: 1px red solid;
             width: 200px;
             height: 200px;
             float: left;
         }
         #WebGLoutput1 {
             margin-left: 20px;
-            border: 1px red solid;
             width: 200px;
             height: 200px;
             float: left;
         }
     </style>
+    <script>
+    $(function () {
+        $(document).keydown(function (e) {
+            console.log(String.fromCharCode(e.which));
+        });
+        $("#WebGLoutput0").click(function (e) {
+            var rect0 = $("#WebGLoutput0")[0].getBoundingClientRect();
+            var x = Math.floor(e.clientX - rect0.left);
+            var y = Math.floor(e.clientY - rect0.top);
+            x = -(100 - x);
+            y = 100 - y;
+            console.log(x, y);
+        });
+    });
+    </script>
 </head>
 <body>
 
