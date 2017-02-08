@@ -8,36 +8,48 @@
     <script type="text/javascript" src="libs/jquery-2.1.3.js"></script>
     <script type="text/javascript" src="libs/threejs/three.js"></script>
     <style>
-        body {
-            /* set margin to 0 and overflow to hidden, to go fullscreen */
-            margin: 0;
-            overflow: hidden;
+        #WebGLoutput0 {
+            border: 1px red solid;
+            width: 200px;
+            height: 200px;
+            float: left;
+        }
+        #WebGLoutput1 {
+            margin-left: 20px;
+            border: 1px red solid;
+            width: 200px;
+            height: 200px;
+            float: left;
         }
     </style>
 </head>
 <body>
 
 <!-- Div which will hold the Output -->
-<div id="WebGL-output">
+<div id="WebGLoutput0">
+</div>
+<div id="WebGLoutput1">
 </div>
 
 <!-- Javascript code that runs our Three.js examples -->
 <script type="text/javascript">
 
     // once everything is loaded, we run our Three.js stuff.
-    function init() {
+    function initScene(eid) {
 
         // create a scene, that will hold all our elements such as objects, cameras and lights.
         var scene = new THREE.Scene();
 
         // create a camera, which defines where we're looking at.
-        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        var camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
 
         // create a render and set the size
         var renderer = new THREE.WebGLRenderer();
         renderer.setClearColorHex();
         renderer.setClearColor(new THREE.Color(0xEEEEEE));
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        //renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(200, 200);
 
         // show axes in the screen
         var axes = new THREE.AxisHelper(20);
@@ -90,7 +102,7 @@
         camera.lookAt(scene.position);
 
         // add the output of the renderer to the html element
-        document.getElementById("WebGL-output").appendChild(renderer.domElement);
+        document.getElementById(eid).appendChild(renderer.domElement);
 
         // render the scene
 
@@ -99,6 +111,12 @@
             renderer.render(scene, camera);
         };
         renderScene();
+    }
+
+    function init() {
+        initScene("WebGLoutput0");
+        initScene("WebGLoutput1");
+        //initScene("WebGLoutput1");
     }
     window.onload = init;
 
