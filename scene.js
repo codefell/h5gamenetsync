@@ -59,3 +59,35 @@ function initEvent() {
             console.log(x, y);
             });
 }
+
+var UpdateHandles = {
+    handles: [],
+    addHandle: function (handle) {
+        for (var i = 0; i < this.handles.length; i++) {
+            if (this.handles[i] == null) {
+                this.handles[i] = handle;
+                return;
+            }
+        }
+        this.handles.push(handle);
+    },
+    delHandle: function (handle) {
+        for (var i = 0; i < this.handles.length; i++) {
+            if (this.handles[i] == handle) {
+                this.handles[i] = null;
+                return;
+            }
+        }
+    },
+    update: function () {
+        requestAnimationFrame(UpdateHandles.update);
+        for (i in UpdateHandles.handles) {
+            handle = UpdateHandles.handles[i];
+            if (handle) {
+                handle();
+            }
+        }
+    },
+};
+
+UpdateHandles.update();
