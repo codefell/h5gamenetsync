@@ -1,3 +1,4 @@
+var scenes = [];
 function initScene(eid) {
 
     // create a scene, that will hold all our elements such as objects, cameras and lights.
@@ -13,19 +14,6 @@ function initScene(eid) {
     //renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setSize(200, 200);
 
-    // create the ground plane
-    var planeGeometry = new THREE.PlaneGeometry(100, 100);
-    var planeMaterial = new THREE.MeshBasicMaterial({color: 0xcccccc});
-    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-    // rotate and position the plane
-    //plane.rotation.x = -0.5 * Math.PI;
-    plane.position.x = 0;
-    plane.position.y = 0;
-    plane.position.z = 0;
-
-    // add the plane to the scene
-    scene.add(plane);
 
 
     // position and point the camera to the center of the scene
@@ -37,8 +25,9 @@ function initScene(eid) {
     // add the output of the renderer to the html element
     document.getElementById(eid).appendChild(renderer.domElement);
 
-    // render the scene
+    scenes.push(scene);
 
+    // render the scene
     var renderScene = function() {
         requestAnimationFrame(renderScene);
         renderer.render(scene, camera);
@@ -90,4 +79,4 @@ var UpdateHandles = {
     },
 };
 
-UpdateHandles.update();
+$(function () {UpdateHandles.update();});
