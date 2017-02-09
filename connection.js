@@ -1,5 +1,3 @@
-var startTime = util.time();
-console.log(startTime);
 function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHandler) {
     this.clientSendBuf = [];
     this.clientRecvBuf = [];
@@ -41,6 +39,7 @@ function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHand
         }
     };
 
+    /*
     var thisObj = this;
     this.updateHandle = function () {
         var o = thisObj;
@@ -48,6 +47,8 @@ function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHand
             o.update();
         }
     }();
+    */
+    this.updateHandle = util.addMethodUpdate(this);
 
     UpdateHandles.addHandle(this.updateHandle);
 }

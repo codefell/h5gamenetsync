@@ -1,3 +1,5 @@
+/*test connnection and update*/
+/*
 function serverRecvHandler(msg) {
     console.log("server recv " + msg + ", time " + Math.floor(util.time()));
     conn0.serverSend("echo " + msg);
@@ -23,5 +25,11 @@ $(document).keydown(function (e) {
         conn1.clientSend("hello, world");
         console.log("client 1 send at " + Math.floor(util.time()));
     }
+});
+*/
+
+$(function () {
+    var gu = new GameUnit(-50, -50, 0xff0000);
+    gu.setRealPos(80, 80);
 });
 
