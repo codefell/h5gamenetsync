@@ -1,16 +1,27 @@
 function serverRecvHandler(msg) {
-    console.log("server recv msg " + msg + ", time " + Math.floor(util.time()));
-    conn.serverSend("echo " + msg);
+    console.log("server recv " + msg + ", time " + Math.floor(util.time()));
+    conn0.serverSend("echo " + msg);
+    conn1.serverSend("echo " + msg);
 }
 
-function clientRecvHandler(msg) {
-    console.log("client recv msg " + msg + ", time " + Math.floor(util.time()));
+function newClientRecvHandler(id) {
+    return function (msg) {
+        console.log("client " + id + " recv " + msg + ", time " + Math.floor(util.time()));
+    }
 }
 
-var conn = new Connection(5, 3, serverRecvHandler, clientRecvHandler);
+var conn0 = new Connection(4, 0, serverRecvHandler, newClientRecvHandler("0"));
+var conn1 = new Connection(2, 0, serverRecvHandler, newClientRecvHandler("1"));
 
 $(document).keydown(function (e) {
-    conn.clientSend("hello, world");
-    console.log("client send msg at " + Math.floor(util.time()));
+    var key = String.fromCharCode(e.which);
+    if (key == "A") {
+        conn0.clientSend("hello, world");
+        console.log("client 0 send at " + Math.floor(util.time()));
+    }
+    else if (key == "B") {
+        conn1.clientSend("hello, world");
+        console.log("client 1 send at " + Math.floor(util.time()));
+    }
 });
 
