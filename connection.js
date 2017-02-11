@@ -1,4 +1,5 @@
-function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHandler) {
+function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRecvHandler) {
+    this.name = name;
     this.clientSendBuf = [];
     this.clientRecvBuf = [];
     this.frameRate = frameRate;
