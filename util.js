@@ -14,16 +14,7 @@ var util = {
         plane.position.y = y;
         plane.position.z = 0;
 
-        // add the plane to the scene
-        scenes[0].add(plane);
         return plane;
-    },
-    addMethodUpdate: function (o) {
-        var f = function () {
-            o.update();
-        };
-        UpdateHandles.addHandle(f);
-        return f;
     },
 };
 

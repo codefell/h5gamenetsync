@@ -1,4 +1,5 @@
-function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHandler) {
+function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRecvHandler) {
+    this.name = name;
     this.clientSendBuf = [];
     this.clientRecvBuf = [];
     this.frameRate = frameRate;
@@ -48,7 +49,7 @@ function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHand
         }
     }();
     */
-    this.updateHandle = util.addMethodUpdate(this);
+    this.updateHandle = UpdateHandles.addMethodUpdate(this);
 
     UpdateHandles.addHandle(this.updateHandle);
 }

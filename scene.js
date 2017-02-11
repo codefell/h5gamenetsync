@@ -1,4 +1,4 @@
-var scenes = [];
+//var scenes = [];
 function initScene(eid) {
 
     // create a scene, that will hold all our elements such as objects, cameras and lights.
@@ -14,8 +14,6 @@ function initScene(eid) {
     //renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setSize(200, 200);
 
-
-
     // position and point the camera to the center of the scene
     camera.position.x = 0;
     camera.position.y = 0;
@@ -25,7 +23,7 @@ function initScene(eid) {
     // add the output of the renderer to the html element
     document.getElementById(eid).appendChild(renderer.domElement);
 
-    scenes.push(scene);
+    //scenes.push(scene);
 
     // render the scene
     var renderScene = function() {
@@ -33,6 +31,7 @@ function initScene(eid) {
         renderer.render(scene, camera);
     };
     renderScene();
+    return {scene: scene, renderer: renderer};
 }
 
 function initEvent() {
@@ -76,6 +75,13 @@ var UpdateHandles = {
                 handle();
             }
         }
+    },
+    addMethodUpdate: function (o) {
+        var f = function () {
+            o.update();
+        };
+        UpdateHandles.addHandle(f);
+        return f;
     },
 };
 

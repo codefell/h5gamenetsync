@@ -1,7 +1,8 @@
-function GameUnit(x, y, color) {
+function GameUnit(x, y, color, scene) {
     this.realState = {pos: new THREE.Vector2(x, y), vel: new THREE.Vector2()};
     this.showState = {pos: new THREE.Vector2(x, y)};
     this.sprite = util.newPlane(x, y, color);
+    scene.add(this.sprite);
 
     GameUnit.prototype.update = function () {
         this.showState.pos.lerp(this.realState.pos, 0.9);
@@ -14,5 +15,5 @@ function GameUnit(x, y, color) {
         this.realState.pos.y = y;
     };
 
-    this.updateHandle = util.addMethodUpdate(this);
+    this.updateHandle = UpdateHandles.addMethodUpdate(this);
 }
