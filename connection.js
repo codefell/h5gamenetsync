@@ -48,7 +48,7 @@ function Connection(frameRate, frameRateFloat, serverRecvHandler, clientRecvHand
         }
     }();
     */
-    this.updateHandle = util.addMethodUpdate(this);
+    this.updateHandle = UpdateHandles.addMethodUpdate(this);
 
     UpdateHandles.addHandle(this.updateHandle);
 }

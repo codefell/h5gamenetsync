@@ -28,8 +28,11 @@ $(document).keydown(function (e) {
 });
 */
 
+/*test GameUnit*/
+/*
 $(function () {
     var gu = new GameUnit(-50, -50, 0xff0000);
     gu.setRealPos(80, 80);
 });
+*/
 
