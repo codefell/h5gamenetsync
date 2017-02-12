@@ -2,9 +2,9 @@ var util = {
     time: function() {
         return (new Date().getTime()) / 1000.0;
     },
-    newPlane: function (x, y, color) {
+    newPlane: function (x, y, w, h, color) {
         // create the ground plane
-        var planeGeometry = new THREE.PlaneGeometry(20, 20);
+        var planeGeometry = new THREE.PlaneGeometry(w, h);
         var planeMaterial = new THREE.MeshBasicMaterial({color: color});
         var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 

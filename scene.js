@@ -6,13 +6,19 @@ function initScene(eid) {
 
     // create a camera, which defines where we're looking at.
     //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    var camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 1000);
+    //
+    var je = $('#'+eid);
+    var width = je.width();
+    var height = je.height();
+
+    var camera = new THREE.OrthographicCamera(-width/2, width/2, 
+        height/2, -height/2, 1, 1000);
 
     // create a render and set the size
     var renderer = new THREE.WebGLRenderer();
     renderer.setClearColor(new THREE.Color(0xEEEEEE));
     //renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setSize(200, 200);
+    renderer.setSize(width, height);
 
     // position and point the camera to the center of the scene
     camera.position.x = 0;
