@@ -54,7 +54,11 @@ function initEvent() {
             });
 }
 
+var sysStartTime = util.time();
 var UpdateHandles = {
+    lastUpdateTime: sysStartTime,
+    time: sysStartTime,
+    deltaTime: 0,
     handles: [],
     addHandle: function (handle) {
         for (var i = 0; i < this.handles.length; i++) {
@@ -74,6 +78,9 @@ var UpdateHandles = {
         }
     },
     update: function () {
+        UpdateHandles.time = util.time();
+        UpdateHandles.deltaTime = 
+            UpdateHandles.time - UpdateHandles.lastUpdateTime;
         requestAnimationFrame(UpdateHandles.update);
         for (i in UpdateHandles.handles) {
             handle = UpdateHandles.handles[i];
@@ -81,6 +88,8 @@ var UpdateHandles = {
                 handle();
             }
         }
+        UpdateHandles.lastUpdateTime = UpdateHandles.time;
+        UpdateHandles.deltaTime = 0; 
     },
     addMethodUpdate: function (o) {
         var f = function () {

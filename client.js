@@ -1,19 +1,53 @@
-function Client(divId)
+function Client(divId, x, y, speed)
 {
     this.divId = divId;
+    this.lastUpdateTime = 0;
+    this.netFrameIndex = 0;
     this.sceneInfo = initScene(divId);
     var je = $("#" + divId);
     var width = je.width();
     var height = je.height();
     this.width = width;
     this.height = height;
-    this.gu = new GameUnit(-width/2+ Math.random() * width, 
-        -height/2 + Math.random() * height, this.sceneInfo.scene);
+    this.hasStart = false;
+    this.gu = new GameUnit(x, y, speed, this.sceneInfo.scene, this);
+    this.startTime = 0;
     Client.allClient[divId] = this;
 
     Client.prototype.recvHandler = function (msg) {
-        this.gu.setRealPos(msg.x, msg.y);
+        if (msg.type == "setTarget") {
+            this.gu.sync(msg);
+        }
     };
+
+    Client.prototype.start = function () {
+        this.hasStart = true;
+        this.netFrameIndex = 0;
+        this.startTime = util.time();
+        this.lastUpdateTime = this.startTime;
+    };
+
+    Client.prototype.netUpdate =  function () {
+        if (!this.hasStart) {
+            return;
+        }
+        var time = util.time();
+        while (this.lastUpdateTime + config.netFrameInterval < time) {
+            this.netFrameIndex++;
+            this.lastUpdateTime += config.netFrameInterval;
+            this.handleNetFrame();
+        }
+    };
+
+    Client.prototype.handleNetFrame = function () {
+        this.gu.handleNetFrame(this.netFrameIndex);
+    };
+
+    Client.prototype.update = function () {
+        this.netUpdate();
+    };
+
+    this.updateHandle = UpdateHandles.addMethodUpdate(this);
 
     this.conn = new Connection(this.divId, 0.1, 0.02, server.recvHandler,
         function (o){
@@ -28,12 +62,10 @@ function Client(divId)
             var x = Math.floor(e.clientX - rect0.left);
             var y = Math.floor(e.clientY - rect0.top);
             var client = Client.allClient[this.id];
-            x = -(client.width - x);
-            y = client.height - y;
-            client.gu.setRealPos(x, y);
-            client.conn.clientSend({clientId:client.divId,
-                x: x,
-                y: y});
+            x = -(client.width/2 - x);
+            y = client.height/2 - y;
+            client.conn.clientSend({type: "setTarget",
+                target: new THREE.Vector3(x, y, 0)});
             });
 }
 Client.allClient = [];
