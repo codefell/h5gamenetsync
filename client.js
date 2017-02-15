@@ -66,6 +66,10 @@ function Client(divId, x, y, speed)
             y = client.height/2 - y;
             client.conn.clientSend({type: "setTarget",
                 target: new THREE.Vector3(x, y, 0)});
-            });
+            })
+    Client.prototype.info = function () {
+        console.log(this.divId + " Info:");
+        console.log(this.gu.showState.pos);
+    };
 }
 Client.allClient = [];
