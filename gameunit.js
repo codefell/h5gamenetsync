@@ -8,7 +8,7 @@ function GameUnit(x, y, speed, scene, client) {
     this.netFrameIndex = 0;
     this.syncNetFrameIndex = 0;
 
-    var sprite = util.newPlane(x, y, 40, 40, 0xff0000);
+    var sprite = util.newPlane(x, y, 20, 20, 0xff0000);
     //var head = util.newPlane(0, 15, 10, 10, 0x00ff00);
     //sprite.add(head);
     this.sprite = sprite;
