@@ -3,7 +3,8 @@ show -> simu 跟踪
 ai逻辑只能同步不能模拟，不能跟踪, ai逻辑包括hp，bAddSubHp, cd
 pos，rot可以从同步模拟，可以跟踪
 
-sync ---模拟---> simu ---跟踪---> show
+lastSync ---求值--- sync ---模拟---> simu ---跟踪---> show
+求值:按照游戏逻辑从lastSync状态计算指定时间
 
 11:先模拟后跟踪
 01:不模拟（sync与simu立刻同步）只跟踪
