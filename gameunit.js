@@ -35,7 +35,7 @@ function GameUnit(x, y, speed, scene, client) {
             - msg.frameIndex * config.netFrameInterval;
         this.simuState.pos = util.move(this.syncState.pos,
             this.target, this.speed, deltaTime);
-        //2帧内补偿showDelta
+        //compensate showDelta in 2 frame
         this.showCpPos.copy(this.simuState.pos).sub(this.showState.pos);
         this.showCpStart = UpdateHandles.time;
         this.showCpLast = this.showCpStart;

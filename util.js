@@ -25,5 +25,24 @@ var util = {
         v.normalize().multiplyScalar(dis);
         return v.add(pos0);
     },
+    array: {
+        add: function (arr, e) {
+            for (var i in arr) {
+                if (arr[i] == null) {
+                    arr[i] = e;
+                    return;
+                }
+            }
+            arr.push(e);
+        },
+        del: function (arr, e) {
+            for (var i in arr) {
+                if (arr[i] == e) {
+                    arr[i] = null;
+                    return;
+                }
+            }
+        },
+    }
 };
 
