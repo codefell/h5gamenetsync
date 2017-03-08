@@ -43,6 +43,14 @@ var util = {
                 }
             }
         },
-    }
+    },
+    headCharUp: function(str) {
+        if (str == null || str == "") {
+            return str;
+        }
+        var head = str.charAt(0);
+        head = head.toUpperCase();
+        return head + str.slice(1);
+    },
 };
 
