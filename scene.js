@@ -91,9 +91,9 @@ var UpdateHandles = {
         UpdateHandles.lastUpdateTime = UpdateHandles.time;
         UpdateHandles.deltaTime = 0; 
     },
-    addMethodUpdate: function (o) {
+    addUpdate: function (fn, o) {
         var f = function () {
-            o.update();
+            fn.update(o);
         };
         UpdateHandles.addHandle(f);
         return f;
