@@ -4,12 +4,12 @@ var Client = {
         var je = $("#" + divId);
         var client = {
             color: color,
-            game: ClientGame.create(divId, color),
             divId: divId,
             sceneInfo: initScene(divId),
             width: je.width(),
             height: je.height(),
         };
+        client.game = ClientGame.create(divId, color, client),
         Client.allClient[divId] = client;
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
@@ -36,6 +36,7 @@ var Client = {
     login: function (client) {
         client.conn.clientSend({
             type: 'login',
+            color: client.color,
         });
     },
     onAddPlayer: function (client, msg) {
@@ -71,19 +72,19 @@ var Client = {
 };
 
 var ClientGame = {
-    create: function (playerId, color) {
+    create: function (playerId, color, client) {
         //syncTime = startTime + syncFrame * config.frameInterval
         var game = {
-            start: false,
-            color: color,
+            client: client,
+            start: true,
             syncFrame: 0,
-            startTime: 0,
+            startTime: UpdateHandles.time,
             showCpStart: 0,
             showCpLast: 0,
             playerId: playerId,
             players: MapList.create(),
         };
-        ClientGame.addPlayer(game, game.playerId, game.color);
+        ClientGame.addPlayer(game, game.playerId, color);
         return game;
     },
 
@@ -100,12 +101,13 @@ var ClientGame = {
     },
 
     addLocalUnit: function (cg, x, y, speed) {
-        ClientPlayer.addUnit(MapList.get(cg.players, cg.playerId), x, y, speed);
+        var player = ClientGame.getLocalPlayer(cg);
+        ClientPlayer.addUnit(player, 0, x, y, speed, player);
     },
 
     addPlayer: function (cg, playerId, color) {
         MapList.add(cg.players,
-            ClientPlayer.create(playerId, color));
+            ClientPlayer.create(playerId, color, cg));
     },
 
     sync: function (cg, syncFrame, syncState) {
@@ -136,7 +138,8 @@ var ClientGame = {
         var deltaFrame = Math.floor((UpdateHandles.time - cg.startTime) / config.frameInterval)
             - cg.syncFrame;
         if (deltaFrame > 0) {
-            for (var i = 0; i < simuDeltaFrame; i++) {
+            for (var i = 0; i < deltaFrame; i++) {
+                console.log('update');
                 var cpHead = Math.min(cg.startTime + cg.syncFrame * config.frameInterval,
                         cg.showCpStart + 100);
                 var cpAlpha = (cpHead - cg.showCpLast) / 100;
@@ -144,6 +147,8 @@ var ClientGame = {
                 cg.showCpLast = cpHead;
             }
         }
+        //test
+        MapList.call(cg.players, ClientPlayer.update);
     },
 };
 
@@ -152,10 +157,11 @@ var ClientPlayer = {
     nextId: function () {
         return ++ClientPlayer.id;
     },
-    create: function (id, color) {
+    create: function (id, color, game) {
         return {
             id: id,
             color: color,
+            game: game,
             units: MapList.create(),
         };
     },
@@ -185,8 +191,7 @@ var ClientPlayer = {
                 unit.id,
                 unit.x,
                 unit.y,
-                unit.speed,
-                playerInfo.color);
+                unit.speed);
         }
     },
     addUnits: function (cp, unitsInfo) {
@@ -196,16 +201,15 @@ var ClientPlayer = {
                 unitInfo.id,
                 unitInfo.x,
                 unitInfo.y,
-                unitInfo.speed,
-                unitInfo.color);
+                unitInfo.speed);
         }
     },
-    addUnit: function (cp, id, x, y, speed, color) {
+    addUnit: function (cp, id, x, y, speed) {
         if (id == 0) {
             id = ClientUnit.nextId();
         }
         MapList.add(cp.units,
-            ClientUnit.create(id, x, y, speed, color));
+            ClientUnit.create(id, x, y, speed, cp));
     },
     sync1f: function (cp) {
         MapList.call(cp.units, ClientUnit.sync1f);
@@ -216,7 +220,10 @@ var ClientPlayer = {
     setCompensate: function (cp) {
         MapList.call(cp.units, ClientUnit.setCompensate);
     },
-    update1f: function (cp) {
+    update1f: function (cp, cpAlpha) {
+        MapList.call(cp.units, ClientUnit.update1f, cpAlpha);
+    },
+    update: function (cp) {
         MapList.call(cp.units, ClientUnit.update);
     },
 };
@@ -242,30 +249,33 @@ var ClientUnit = {
             cu.sync.speed = syncState.speed;
         }
     },
-    create: function (id, x, y, speed, color) {
-        return {
+    create: function (id, x, y, speed, player) {
+        var unit = {
             id: id,
-            color: color,
-            sprite: newPlane(x, y, 20, 20, color),
+            color: player.color,
+            player: player,
+            sprite: util.newPlane(x, y, 20, 20, player.color),
             sync: {
-                pos: new THREE.Vector3(x, y),
-                target: new THREE.Vector3(x, y),
-                speed: 0,
+                pos: new THREE.Vector3(x, y, 0),
+                target: new THREE.Vector3(200, 200, 0),
+                speed: speed,
             },
             simu: {
-                pos: new THREE.Vector3(x, y),
+                pos: new THREE.Vector3(x, y, 0),
             },
             show: {
-                pos: new THREE.Vector3(x, y),
+                pos: new THREE.Vector3(x, y, 0),
                 cpPos: new THREE.Vector3(),
             },
         };
+        unit.player.game.client.sceneInfo.scene.add(unit.sprite);
+        return unit;
     },
 
     sync1f: function (cu) {
-        this.pos = util.move(cu.sync.pos,
+        cu.sync.pos = util.move(cu.sync.pos,
                 cu.sync.target, cu.sync.speed, config.frameInterval);
-        ClientUnit.setCompensate(cu);
+        cu.simu.pos.copy(cu.sync.pos);
     },
 
     setCompensate: function (cu) {
@@ -274,17 +284,23 @@ var ClientUnit = {
 
     simu1f: function (cu) {
         var oldSimuPos = cu.simu.pos.clone();
-        cu.simu.pos = util.move(cu.sync.pos,
-                cu.sync.target, cu.speed, config.frameInterval);
+        console.log(cu.sync.pos,
+            cu.sync.target,
+            cu.sync.speed);
+        cu.simu.pos = util.move(cu.simu.pos,
+                cu.sync.target, cu.sync.speed, config.frameInterval);
+        console.log(cu.simu.pos);
         return cu.simu.pos.clone().sub(oldSimuPos);
     },
 
     update1f: function (cu, cpAlpha) {
-        var translate = cu.simu();
+        var translate = ClientUnit.simu1f(cu);
         cu.show.pos.add(translate);
         var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
         cu.show.pos.add(cpPos);
+    },
 
+    update: function (cu) {
         cu.sprite.position.x = cu.show.pos.x;
         cu.sprite.position.y = cu.show.pos.y;
     },

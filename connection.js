@@ -8,7 +8,7 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
     this.clientRecvHandler = clientRecvHandler;
 
     Connection.prototype.handleTime = function () {
-        return (util.time() + this.frameRate - this.frameRateFloat + Math.random() * 2 * this.frameRateFloat);
+        return (UpdateHandles.time + this.frameRate - this.frameRateFloat + Math.random() * 2 * this.frameRateFloat);
     };
 
     Connection.prototype.clientSend = function (msg) {
@@ -23,7 +23,7 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
         while (this.clientSendBuf.length > 0) {
             var handleTimestamp = this.clientSendBuf[0].handleTimestamp;
             var msg = this.clientSendBuf[0].msg;
-            if (handleTimestamp > util.time()) {
+            if (handleTimestamp > UpdateHandles.time) {
                 break;
             }
             this.serverRecvHandler(this, msg);
@@ -32,7 +32,7 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
         while (this.clientRecvBuf.length > 0) {
             var handleTimestamp = this.clientRecvBuf[0].handleTimestamp;
             var msg = this.clientRecvBuf[0].msg;
-            if (handleTimestamp > util.time()) {
+            if (handleTimestamp > UpdateHandles.time) {
                 break;
             }
             this.clientRecvHandler(msg);
@@ -40,14 +40,5 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
         }
     };
 
-    /*
-    var thisObj = this;
-    this.updateHandle = function () {
-        var o = thisObj;
-        return function () {
-            o.update();
-        }
-    }();
-    */
     this.updateHandle = UpdateHandles.addMethodUpdate(this);
 }

@@ -26,7 +26,7 @@ var Server = {
         };
     },
     onLogin: function (server, conn, msg) {
-        var loginPlayer = ServerPlayer.create(conn);
+        var loginPlayer = ServerPlayer.create(conn, msg.color);
         MapList.add(server.players, loginPlayer);
         for (var i in server.players.list) {
             var player = server.players.list[i];
@@ -48,6 +48,7 @@ var Server = {
         var player = MapList.get(conn.id);
         ServerPlayer.setPlayerInfo(player,
             msg.playerInfo);
+        player.ready = true;
         var start = true;
         for (var i in server.players.list) {
             var player = server.players.list[i];
@@ -113,12 +114,12 @@ var Server = {
 };
 
 var ServerPlayer = {
-    create: function (conn) {
+    create: function (conn, color) {
         return {
             id: conn.id,
             conn: conn,
             color: color,
-            ready: true,
+            ready: false,
             units: MapList.create(),
         };
     },

@@ -52,5 +52,12 @@ var util = {
         head = head.toUpperCase();
         return head + str.slice(1);
     },
+    arrCopy: function (arr) {
+        var newArr = [];
+        for (var i = 0; i < arr.length; i++) {
+            newArr.push(arr[i]);
+        }
+        return newArr;
+    },
 };
 

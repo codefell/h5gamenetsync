@@ -78,10 +78,13 @@ var UpdateHandles = {
         }
     },
     update: function () {
-        UpdateHandles.time = util.time();
+        //test
+        //UpdateHandles.time = util.time();
+        UpdateHandles.time = UpdateHandles.lastUpdateTime + config.frameInterval; //util.time();
         UpdateHandles.deltaTime = 
             UpdateHandles.time - UpdateHandles.lastUpdateTime;
-        requestAnimationFrame(UpdateHandles.update);
+        //requestAnimationFrame(UpdateHandles.update);
+        
         for (i in UpdateHandles.handles) {
             handle = UpdateHandles.handles[i];
             if (handle) {
@@ -91,20 +94,20 @@ var UpdateHandles = {
         UpdateHandles.lastUpdateTime = UpdateHandles.time;
         UpdateHandles.deltaTime = 0; 
     },
-    addUpdate: function (fn, o) {
-        var f = function () {
-            fn.update(o);
-        };
-        UpdateHandles.addHandle(f);
-        return f;
-    },
-    addUpdateM: function (o) {
+    addMethodUpdate: function (o) {
         var f = function () {
             o.update();
         };
         UpdateHandles.addHandle(f);
         return f;
     },
+    addUpdate: function (fn, o) {
+        var f = function () {
+            fn(o);
+        };
+        UpdateHandles.addHandle(f);
+        return f;
+    },
 };
 
-$(function () {UpdateHandles.update();});
+//$(function () {UpdateHandles.update();});

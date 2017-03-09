@@ -9,6 +9,7 @@ var MapList = {
         for (var i in ml.list) {
             if (ml.list[i] == undefined) {
                 ml.list[i] = e;
+                ml.map[e.id] = e;
                 return;
             }
         }
@@ -19,16 +20,17 @@ var MapList = {
         for (var i in ml.list) {
             if (ml.list[i] == e) {
                 ml.list[i] = undefined;
+                ml.map[e.id] = undefined;
                 return;
             }
         }
         ml.map[e.id] = undefined;
     },
     get: function (ml, id) {
-        return ml[id];
+        return ml.map[id];
     },
     call: function (ml, fn) {
-        var args = arguments.slice(2);
+        var args = util.arrCopy(arguments).slice(2);
         args.unshift(null);
         for (var i in ml.list) {
             if (ml.list[i]) {
