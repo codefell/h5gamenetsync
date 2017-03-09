@@ -5,13 +5,18 @@ $(function () {
         if (key == "T") {
             UpdateHandles.update();
         }
+        else if (key == "O") {
+            Client.opTest(client0);
+        }
+        else if (key == "I") {
+            console.log(client0.game.players.list[0].units.list[0]);
+            console.log(Server.getInst().players.list[0].units.list[0]);
+        }
     });
 
     var server = Server.getInst();
-    /*
     var serverUpdateHandle = 
         UpdateHandles.addUpdate(Server.update, server);
-        */
     var client0 = Client.create("WebGLoutput0", 0xcccccc);
     //var client1 = Client.create("WebGLoutput1", 0x00FF00);
     Client.addLocalUnits(client0, [
@@ -29,6 +34,7 @@ $(function () {
         */
     ]);
     Client.login(client0);
+    Client.ready(client0);
     /*
     Client.addLocalUnits(client1, [
         {

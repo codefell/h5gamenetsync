@@ -9,11 +9,12 @@ var Client = {
             width: je.width(),
             height: je.height(),
         };
+        client.sceneInfo.scene.add(util.newPlane(0, 0, 10, 10, 0x0000ff));
         client.game = ClientGame.create(divId, color, client),
         Client.allClient[divId] = client;
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
-        var conn = new Connection(divId, 0.1, 0.02,
+        var conn = new Connection(divId, 0.0, 0.00,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
@@ -33,6 +34,18 @@ var Client = {
                 client.color);
         }
     },
+    opTest: function (client) {
+        client.sceneInfo.scene.add(util.newPlane(200, 200, 10, 10, 0x0000ff));
+        client.conn.clientSend({
+            type: "op",
+            unitsInfo: [
+                {
+                    id: 1,
+                    target: new THREE.Vector3(200, 200),
+                },
+            ],
+        })
+    },
     login: function (client) {
         client.conn.clientSend({
             type: 'login',
@@ -43,7 +56,7 @@ var Client = {
         ClientGame.addPlayer(client, msg.playerId, msg.color);
     },
     ready: function (client) {
-        var player = ClientGame.getLocalPlayer(client.cg);
+        var player = ClientGame.getLocalPlayer(client.game);
         var playerInfo = ClientPlayer.getInfo(player);
         client.conn.clientSend({
             type: 'ready',
@@ -55,10 +68,10 @@ var Client = {
             .initInfo(msg.playerInfo);
     },
     onStart: function (client, msg) {
-        ClientGame.start(client.cg);
+        ClientGame.start(client.game);
     },
     onSync: function (client, msg) {
-        ClientGame.sync(client.cg, msg.frameIndex,
+        ClientGame.sync(client.game, msg.frameIndex,
             msg.syncState);
     },
 
@@ -114,7 +127,7 @@ var ClientGame = {
         var syncDeltaFrame = syncFrame - cg.syncFrame;
         var simuDeltaFrame = Math.floor(
             (UpdateHandles.time - cg.startTime)
-            / confgi.frameInterval) - syncFrame;
+            / config.frameInterval) - syncFrame;
         cg.showCpStart = UpdateHandles.time;
         cg.showCpLast = cg.showCpStart;
         for (var i = 0; i < syncDeltaFrame; i++) {
@@ -124,7 +137,7 @@ var ClientGame = {
         for (var i = 0; i < simuDeltaFrame; i++) {
             MapList.call(cg.players, ClientPlayer.simu1f);
         }
-        MapList.setCompensate(cg.players, ClientPlayer.setCompensate);
+        MapList.call(cg.players, ClientPlayer.setCompensate);
         for (var i in syncState) {
             var playerSyncState = syncState[i];
             var player = MapList.get(cg.players, playerSyncState.playerId);
@@ -139,7 +152,6 @@ var ClientGame = {
             - cg.syncFrame;
         if (deltaFrame > 0) {
             for (var i = 0; i < deltaFrame; i++) {
-                console.log('update');
                 var cpHead = Math.min(cg.startTime + cg.syncFrame * config.frameInterval,
                         cg.showCpStart + 100);
                 var cpAlpha = (cpHead - cg.showCpLast) / 100;
@@ -168,7 +180,7 @@ var ClientPlayer = {
     setSyncState: function (cp, syncState) {
         for (var i in syncState) {
             var unitSyncState = syncState[i];
-            var unit = MapList.get(unitSyncState.id);
+            var unit = MapList.get(cp.units, unitSyncState.id);
             ClientUnit.setSyncState(unit, unitSyncState);
         }
     },
@@ -179,7 +191,6 @@ var ClientPlayer = {
             units.push(ClientUnit.getInfo(unit));
         }
         var info = {
-            color: cp.color,
             units: units,
         };
         return info;
@@ -257,7 +268,7 @@ var ClientUnit = {
             sprite: util.newPlane(x, y, 20, 20, player.color),
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
-                target: new THREE.Vector3(200, 200, 0),
+                target: new THREE.Vector3(x, y, 0),
                 speed: speed,
             },
             simu: {
@@ -284,12 +295,8 @@ var ClientUnit = {
 
     simu1f: function (cu) {
         var oldSimuPos = cu.simu.pos.clone();
-        console.log(cu.sync.pos,
-            cu.sync.target,
-            cu.sync.speed);
         cu.simu.pos = util.move(cu.simu.pos,
                 cu.sync.target, cu.sync.speed, config.frameInterval);
-        console.log(cu.simu.pos);
         return cu.simu.pos.clone().sub(oldSimuPos);
     },
 
