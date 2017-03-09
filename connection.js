@@ -26,7 +26,7 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
             if (handleTimestamp > util.time()) {
                 break;
             }
-            this.serverRecvHandler(msg);
+            this.serverRecvHandler(this, msg);
             this.clientSendBuf.shift();
         }
         while (this.clientRecvBuf.length > 0) {
@@ -50,6 +50,4 @@ function Connection(name, frameRate, frameRateFloat, serverRecvHandler, clientRe
     }();
     */
     this.updateHandle = UpdateHandles.addMethodUpdate(this);
-
-    UpdateHandles.addHandle(this.updateHandle);
 }

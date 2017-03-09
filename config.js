@@ -1,4 +1,4 @@
 var config = {
-    frameInterval: 1 / 30,
+    frameInterval: 1 / 60,
     targetDelta: 1,
 }

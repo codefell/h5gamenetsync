@@ -98,6 +98,13 @@ var UpdateHandles = {
         UpdateHandles.addHandle(f);
         return f;
     },
+    addUpdateM: function (o) {
+        var f = function () {
+            o.update();
+        };
+        UpdateHandles.addHandle(f);
+        return f;
+    },
 };
 
 $(function () {UpdateHandles.update();});
