@@ -1,5 +1,10 @@
 $(function () {
+    initCfg();
     initScene("WebGLoutput0");
-    initScene("WebGLoutput1");
     initEvent();
+    initGrid();
+    var game = Game.create();
+    $("#nextFrame").click(function () {
+        Game.nextFrame(game);
+    });
 });
