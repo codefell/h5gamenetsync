@@ -12,8 +12,10 @@ var Client = {
         client.sceneInfo.scene.add(util.newPlane(0, 0, 10, 10, 0x0000ff));
         client.game = ClientGame.create(divId, color, client),
         Client.allClient[divId] = client;
+
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
+
         var conn = new Connection(divId, 0.0, 0.00,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
@@ -21,6 +23,7 @@ var Client = {
                     Client.recvHandler(o, msg);
                 };
             }(client));
+
         client.conn = conn;
         client.updateHandle = updateHandle;
         return client;
@@ -34,14 +37,25 @@ var Client = {
                 client.color);
         }
     },
+    opTest1: function (client) {
+        client.conn.clientSend({
+            type: "op",
+            unitsInfo: [
+                {
+                    id: 2,
+                    speed: 70,
+                },
+            ],
+        });
+    },
     opTest: function (client) {
-        client.sceneInfo.scene.add(util.newPlane(200, 200, 10, 10, 0x0000ff));
+        client.sceneInfo.scene.add(util.newPlane(100, 100, 10, 10, 0x0000ff));
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
                     id: 1,
-                    target: new THREE.Vector3(200, 200),
+                    target: new THREE.Vector3(100, 100, 0),
                 },
             ],
         })
@@ -53,7 +67,7 @@ var Client = {
         });
     },
     onAddPlayer: function (client, msg) {
-        ClientGame.addPlayer(client, msg.playerId, msg.color);
+        ClientGame.addPlayer(client.game, msg.playerId, msg.color);
     },
     ready: function (client) {
         var player = ClientGame.getLocalPlayer(client.game);
@@ -64,8 +78,8 @@ var Client = {
         });
     },
     onPlayerReady: function (client, msg) {
-        ClientGame.getPlayer(client, msg.playerId)
-            .initInfo(msg.playerInfo);
+        ClientPlayer.initInfo(ClientGame.getPlayer(client.game, msg.playerId),
+            msg.playerInfo);
     },
     onStart: function (client, msg) {
         ClientGame.start(client.game);
@@ -91,6 +105,7 @@ var ClientGame = {
             client: client,
             start: true,
             syncFrame: 0,
+            simuFrame: 0,
             startTime: UpdateHandles.time,
             showCpStart: 0,
             showCpLast: 0,
@@ -103,6 +118,7 @@ var ClientGame = {
 
     start: function (cg) {
         cg.start = true;
+        cg.startTime = UpdateHandles.time;
     },
 
     getPlayer: function (cg, playerId) {
@@ -128,15 +144,18 @@ var ClientGame = {
         var simuDeltaFrame = Math.floor(
             (UpdateHandles.time - cg.startTime)
             / config.frameInterval) - syncFrame;
-        cg.showCpStart = UpdateHandles.time;
-        cg.showCpLast = cg.showCpStart;
         for (var i = 0; i < syncDeltaFrame; i++) {
             MapList.call(cg.players, ClientPlayer.sync1f);
             cg.syncFrame++;
         }
+        cg.simuFrame = cg.syncFrame;
         for (var i = 0; i < simuDeltaFrame; i++) {
             MapList.call(cg.players, ClientPlayer.simu1f);
+            cg.simuFrame++;
         }
+
+        cg.showCpStart = cg.syncFrame + simuDeltaFrame;
+        cg.showCpLast = cg.showCpStart;
         MapList.call(cg.players, ClientPlayer.setCompensate);
         for (var i in syncState) {
             var playerSyncState = syncState[i];
@@ -146,17 +165,15 @@ var ClientGame = {
     },
 
     update: function (cg) {
-        var deltaTime = UpdateHandles.time 
-            - (cg.startTime + cg.syncFrame * config.frameInterval);
         var deltaFrame = Math.floor((UpdateHandles.time - cg.startTime) / config.frameInterval)
-            - cg.syncFrame;
+            - cg.simuFrame;
         if (deltaFrame > 0) {
-            for (var i = 0; i < deltaFrame; i++) {
-                var cpHead = Math.min(cg.startTime + cg.syncFrame * config.frameInterval,
-                        cg.showCpStart + 100);
-                var cpAlpha = (cpHead - cg.showCpLast) / 100;
+            for (var i = 1; i <= deltaFrame; i++) {
+                var cpHead = Math.min(cg.simuFrame + i, cg.showCpStart + 2);
+                var cpAlpha = (cpHead - cg.showCpLast) / 2;
                 MapList.call(cg.players, ClientPlayer.update1f, cpAlpha);
                 cg.showCpLast = cpHead;
+                cg.simuFrame++;
             }
         }
         //test
@@ -284,6 +301,7 @@ var ClientUnit = {
     },
 
     sync1f: function (cu) {
+        var oldPos = cu.sync.pos.clone();
         cu.sync.pos = util.move(cu.sync.pos,
                 cu.sync.target, cu.sync.speed, config.frameInterval);
         cu.simu.pos.copy(cu.sync.pos);

@@ -79,11 +79,11 @@ var UpdateHandles = {
     },
     update: function () {
         //test
-        //UpdateHandles.time = util.time();
-        UpdateHandles.time = UpdateHandles.lastUpdateTime + config.frameInterval; //util.time();
+        UpdateHandles.time = util.time();
+        //UpdateHandles.time = UpdateHandles.lastUpdateTime + config.frameInterval; //util.time();
         UpdateHandles.deltaTime = 
             UpdateHandles.time - UpdateHandles.lastUpdateTime;
-        //requestAnimationFrame(UpdateHandles.update);
+        requestAnimationFrame(UpdateHandles.update);
         
         for (i in UpdateHandles.handles) {
             handle = UpdateHandles.handles[i];
@@ -110,4 +110,4 @@ var UpdateHandles = {
     },
 };
 
-//$(function () {UpdateHandles.update();});
+$(function () {UpdateHandles.update();});

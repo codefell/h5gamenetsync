@@ -40,6 +40,14 @@ var Server = {
                     playerId: player.id,
                     color: player.color,
                 });
+                if (player.ready) {
+                    var playerInfo = ServerPlayer.getInfo(player);
+                    loginPlayer.conn.serverSend({
+                        type: "playerReady",
+                        playerInfo: playerInfo,
+                        playerId: player.id,
+                    });
+                }
             }
         }
     },
@@ -47,25 +55,25 @@ var Server = {
         var player = MapList.get(server.players, conn.id);
         ServerPlayer.setPlayerInfo(player,
             msg.playerInfo);
-        console.log("server ready", server);
         player.ready = true;
         var readyNum = 0;
         for (var i in server.players.list) {
             var player = server.players.list[i];
-            if (player.ready == false) {
+            if (player.ready == true) {
                 readyNum++;
             }
             if (player.id != conn.id) {
                 player.conn.serverSend({
                     type: "playerReady",
                     playerInfo: msg.playerInfo,
+                    playerId: conn.id,
                 });
             }
         }
         if (readyNum == 1) {
             server.start = true; 
             server.startTime = UpdateHandles.time;
-            ServerGame.sendMsg(server, {
+            Server.sendMsg(server, {
                 type: 'start',
             });
         }
@@ -93,27 +101,28 @@ var Server = {
                 (UpdateHandles.time - server.startTime)
                 / config.frameInterval);
 
-        if (server.syncState || frameNum % 2 == 0) {
+    //    if (server.syncState.length > 0 || (frameNum % 2 == 0)) {
             var deltaFrame = frameNum - server.syncFrame;
-            if (server.syncState.length > 0) {
-                console.log("server sync state", server.syncState);
-                Server.sync(server, deltaFrame);
-            }
+
+            Server.sync(server, deltaFrame);
+
             for (var i in server.syncState){
                 var playerSyncState = server.syncState[i];
                 var player = MapList.get(server.players, playerSyncState.playerId);
                 ServerPlayer.setSyncState(player, playerSyncState.units);
             }
+
             Server.sendMsg(server, {
                 type: "sync",
                 frameIndex: frameNum,
                 syncState: server.syncState,
             });
-            if (server.syncState.length > 0) {
+
+            //if (server.syncState.length > 0) {
                 server.syncState = [];
                 server.syncFrame = frameNum;
-            }
-        }
+            //}
+     //   }
     },
 };
 
@@ -126,6 +135,17 @@ var ServerPlayer = {
             ready: false,
             units: MapList.create(),
         };
+    },
+    getInfo: function (sp) {
+        var units = [];
+        for (var i in sp.units.list) {
+            var unit = sp.units.list[i];
+            units.push(ServerUnit.getInfo(unit));
+        }
+        var info = {
+            units: units,
+        };
+        return info;
     },
     setSyncState: function (sp, unitsInfo) {
         for (var i in unitsInfo) {
@@ -159,8 +179,15 @@ var ServerUnit = {
             speed: speed,
         };
     },
+    getInfo: function(su) {
+        return {
+            id: su.id,
+            x: su.pos.x,
+            y: su.pos.y,
+            speed: su.speed,
+        };
+    },
     setSyncState: function (su, unitInfo) {
-        console.log(unitInfo);
         if (unitInfo.target) {
             su.target = unitInfo.target;
         }
@@ -169,7 +196,7 @@ var ServerUnit = {
         }
     },
     sync1f: function (su) {
-        console.log("server unit sync1f");
+        var oldPos = su.pos.clone();
         su.pos = util.move(su.pos,
             su.target, su.speed, config.frameInterval);
     },
