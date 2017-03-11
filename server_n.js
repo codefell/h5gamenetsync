@@ -91,10 +91,7 @@ var Server = {
         }
     },
     sync: function (server, deltaFrame) {
-        for (var i = 0; i < deltaFrame; i++) {
-            MapList.call(server.players, ServerPlayer.sync1f);
-            //server.syncFrame++;
-        }
+        MapList.call(server.players, ServerPlayer.sync, deltaFrame);
     },
     update: function (server) {
         var frameNum = Math.floor(
@@ -165,8 +162,8 @@ var ServerPlayer = {
             MapList.add(sp.units, unit);
         }
     },
-    sync1f: function (sp) {
-        MapList.call(sp.units, ServerUnit.sync1f);
+    sync: function (sp, deltaFrame) {
+        MapList.call(sp.units, ServerUnit.sync, deltaFrame);
     },
 };
 
@@ -195,9 +192,9 @@ var ServerUnit = {
             su.speed = unitInfo.speed;
         }
     },
-    sync1f: function (su) {
+    sync: function (su, deltaFrame) {
         var oldPos = su.pos.clone();
         su.pos = util.move(su.pos,
-            su.target, su.speed, config.frameInterval);
+            su.target, su.speed, deltaFrame * config.frameInterval);
     },
 };

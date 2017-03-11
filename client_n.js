@@ -16,7 +16,7 @@ var Client = {
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
-        var conn = new Connection(divId, 0.0, 0.00,
+        var conn = new Connection(divId, 0.1, 0.,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
@@ -100,7 +100,6 @@ var Client = {
 
 var ClientGame = {
     create: function (playerId, color, client) {
-        //syncTime = startTime + syncFrame * config.frameInterval
         var game = {
             client: client,
             start: true,
@@ -111,6 +110,7 @@ var ClientGame = {
             showCpLast: 0,
             playerId: playerId,
             players: MapList.create(),
+            syncInfo: [],
         };
         ClientGame.addPlayer(game, game.playerId, color);
         return game;
@@ -139,44 +139,46 @@ var ClientGame = {
             ClientPlayer.create(playerId, color, cg));
     },
 
-    sync: function (cg, syncFrame, syncState) {
-        var syncDeltaFrame = syncFrame - cg.syncFrame;
-        var simuDeltaFrame = Math.floor(
-            (UpdateHandles.time - cg.startTime)
-            / config.frameInterval) - syncFrame;
-        for (var i = 0; i < syncDeltaFrame; i++) {
-            MapList.call(cg.players, ClientPlayer.sync1f);
-            cg.syncFrame++;
-        }
-        cg.simuFrame = cg.syncFrame;
-        for (var i = 0; i < simuDeltaFrame; i++) {
-            MapList.call(cg.players, ClientPlayer.simu1f);
-            cg.simuFrame++;
-        }
-
-        cg.showCpStart = cg.syncFrame + simuDeltaFrame;
-        cg.showCpLast = cg.showCpStart;
-        MapList.call(cg.players, ClientPlayer.setCompensate);
-        for (var i in syncState) {
-            var playerSyncState = syncState[i];
-            var player = MapList.get(cg.players, playerSyncState.playerId);
-            ClientPlayer.setSyncState(player, playerSyncState.units);
-        }
+    sync: function (cg, syncFrame, allPlayerSyncInfo) {
+        cg.syncInfo.push({
+            syncFrame: syncFrame,
+            allPlayerSyncInfo: allPlayerSyncInfo,
+        });
     },
 
     update: function (cg) {
-        var deltaFrame = Math.floor((UpdateHandles.time - cg.startTime) / config.frameInterval)
-            - cg.simuFrame;
-        if (deltaFrame > 0) {
-            for (var i = 1; i <= deltaFrame; i++) {
-                var cpHead = Math.min(cg.simuFrame + i, cg.showCpStart + 2);
-                var cpAlpha = (cpHead - cg.showCpLast) / 2;
-                MapList.call(cg.players, ClientPlayer.update1f, cpAlpha);
-                cg.showCpLast = cpHead;
-                cg.simuFrame++;
+        var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
+            / config.frameInterval);
+        var deltaSimuFrame = currFrame - cg.simuFrame;
+        var cpHead = Math.min(
+                cg.showCpStart + 6,
+                currFrame);
+        var cpAlpha = (cpHead - cg.showCpLast) / 6;
+        cg.showCpLast = cpHead;
+        MapList.call(cg.players, ClientPlayer.simuShow, deltaSimuFrame, cpAlpha);
+        cg.simuFrame = currFrame;
+
+        if (cg.syncInfo.length > 0) {
+            for (var i in cg.syncInfo) {
+                var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
+                MapList.call(cg.players, ClientPlayer.sync, deltaSyncFrame);
+                cg.syncFrame = cg.syncInfo[i].syncFrame;
+                for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
+                    var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
+                    var player = MapList.get(cg.players, playerSyncInfo.playerId);
+                    ClientPlayer.setSyncInfo(player, playerSyncInfo.units);
+                }
             }
+            //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
+            //wait for new syncinfo
+            var deltaSimuFrame = currFrame - cg.syncFrame;
+            MapList.call(cg.players, ClientPlayer.simu, deltaSimuFrame);
+            cg.simuFrame = currFrame;
+            MapList.call(cg.players, ClientPlayer.setCompensate);
+            cg.showCpStart = currFrame;
+            cg.showCpLast = currFrame;
+            cg.syncInfo = [];
         }
-        //test
         MapList.call(cg.players, ClientPlayer.update);
     },
 };
@@ -194,11 +196,11 @@ var ClientPlayer = {
             units: MapList.create(),
         };
     },
-    setSyncState: function (cp, syncState) {
+    setSyncInfo: function (cp, syncState) {
         for (var i in syncState) {
             var unitSyncState = syncState[i];
             var unit = MapList.get(cp.units, unitSyncState.id);
-            ClientUnit.setSyncState(unit, unitSyncState);
+            ClientUnit.setSyncInfo(unit, unitSyncState);
         }
     },
     getInfo: function (cp) {
@@ -239,17 +241,17 @@ var ClientPlayer = {
         MapList.add(cp.units,
             ClientUnit.create(id, x, y, speed, cp));
     },
-    sync1f: function (cp) {
-        MapList.call(cp.units, ClientUnit.sync1f);
+    sync: function (cp, deltaFrame) {
+        MapList.call(cp.units, ClientUnit.sync, deltaFrame);
     },
-    simu1f: function (cp) {
-        MapList.call(cp.units, ClientUnit.simu1f);
+    simu: function (cp, deltaFrame) {
+        MapList.call(cp.units, ClientUnit.simu, deltaFrame);
     },
     setCompensate: function (cp) {
         MapList.call(cp.units, ClientUnit.setCompensate);
     },
-    update1f: function (cp, cpAlpha) {
-        MapList.call(cp.units, ClientUnit.update1f, cpAlpha);
+    simuShow: function (cp, deltaFrame, cpAlpha) {
+        MapList.call(cp.units, ClientUnit.simuShow, deltaFrame, cpAlpha);
     },
     update: function (cp) {
         MapList.call(cp.units, ClientUnit.update);
@@ -269,7 +271,7 @@ var ClientUnit = {
             speed: cu.sync.speed,
         };
     },
-    setSyncState: function(cu, syncState) {
+    setSyncInfo: function(cu, syncState) {
         if (syncState.target) {
             cu.sync.target = syncState.target;
         }
@@ -300,10 +302,9 @@ var ClientUnit = {
         return unit;
     },
 
-    sync1f: function (cu) {
-        var oldPos = cu.sync.pos.clone();
+    sync: function (cu, deltaFrame) {
         cu.sync.pos = util.move(cu.sync.pos,
-                cu.sync.target, cu.sync.speed, config.frameInterval);
+                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
         cu.simu.pos.copy(cu.sync.pos);
     },
 
@@ -311,21 +312,21 @@ var ClientUnit = {
         cu.show.cpPos.copy(cu.simu.pos).sub(cu.show.pos);
     },
 
-    simu1f: function (cu) {
+    simu: function (cu, deltaFrame) {
         var oldSimuPos = cu.simu.pos.clone();
         cu.simu.pos = util.move(cu.simu.pos,
-                cu.sync.target, cu.sync.speed, config.frameInterval);
+                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
         return cu.simu.pos.clone().sub(oldSimuPos);
     },
 
-    update1f: function (cu, cpAlpha) {
-        var translate = ClientUnit.simu1f(cu);
-        cu.show.pos.add(translate);
+    simuShow: function (cu, deltaFrame, cpAlpha) {
+        var deltaSimuPos = ClientUnit.simu(cu, deltaFrame);
+        cu.show.pos.add(deltaSimuPos);
         var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
-        cu.show.pos.add(cpPos);
+        cu.show.pos.add(cpPos)
     },
 
-    update: function (cu) {
+    update: function (cu, frame, simuFrame, cpAlpha) {
         cu.sprite.position.x = cu.show.pos.x;
         cu.sprite.position.y = cu.show.pos.y;
     },

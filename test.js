@@ -1,5 +1,4 @@
 /*test connnection and update*/
-/*
 function serverRecvHandler(msg) {
     console.log("server recv " + msg + ", time " + Math.floor(util.time()));
     conn0.serverSend("echo " + msg);
@@ -12,8 +11,8 @@ function newClientRecvHandler(id) {
     }
 }
 
-var conn0 = new Connection(4, 0, serverRecvHandler, newClientRecvHandler("0"));
-var conn1 = new Connection(2, 0, serverRecvHandler, newClientRecvHandler("1"));
+var conn0 = new Connection(0, 4, 0, serverRecvHandler, newClientRecvHandler("0"));
+var conn1 = new Connection(1, 2, 0, serverRecvHandler, newClientRecvHandler("1"));
 
 $(document).keydown(function (e) {
     var key = String.fromCharCode(e.which);
@@ -26,7 +25,6 @@ $(document).keydown(function (e) {
         console.log("client 1 send at " + Math.floor(util.time()));
     }
 });
-*/
 
 /*test GameUnit*/
 /*
