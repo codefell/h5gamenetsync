@@ -33,6 +33,20 @@
         }
         #ctrl {
             clear: left;
+            float: left;
+        }
+        #frameNum {
+            margin-top: 3px;
+            float: left;
+            clear: left;
+            width: 30px;
+            height: 1.2em;
+        }
+        #syncFrameNum {
+            width: 50px;
+        }
+        #gameInfo {
+            clear: left;
         }
     </style>
 </head>
@@ -43,9 +57,12 @@
 </div>
 <div id="measure"></div>
 <div id="ctrl">
-<button id="nextFrame">nextFrame</button>
-<button id="sync">sync</button>
 <span id="frameNum">0</span>
+<button id="nextFrame">next</button>
+<button id="syncFrame">sync</button>
+<input id="syncFrameNum" type="number" min="0"/>
+</div>
+<div id="gameInfo">
 </div>
 
 </body>
