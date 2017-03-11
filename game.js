@@ -49,6 +49,7 @@ var Game = {
         game.simu.pos += game.sync.speed / 60;
     },
     updateState: function (game) {
+        //first simu for this frame, then deal with new syncinfo
         var deltaSimuFrame = game.clientFrame - game.simuFrame;
         var oldSimuPos = game.simu.pos;
         for (var i = 0; i < deltaSimuFrame; i++) {
@@ -56,10 +57,9 @@ var Game = {
         }
         var deltaSimuPos = game.simu.pos - oldSimuPos;
         game.show.pos += deltaSimuPos;
-        //should start cp in the sync frame, not next
         var cpHead = Math.min(
                 game.cpStartFrame + 6,
-                game.clientFrame + 1);
+                game.clientFrame);
         var cpAlpha = (cpHead - game.cpLastFrame) / 6;
         game.cpLastFrame = cpHead;
         var cpPos = game.cpPos * cpAlpha;
@@ -77,7 +77,8 @@ var Game = {
                 game.syncFrame = syncInfo.syncFrame;
                 //set game.syncinfo state to game unit
             }
-            //limit simu frame num
+            //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
+            //wait for new syncinfo
             var deltaSimuFrame = game.clientFrame - game.syncFrame;
             for (var i = 0; i < deltaSimuFrame; i++) {
                 Game.simu1f(game);
