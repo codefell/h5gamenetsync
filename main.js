@@ -9,15 +9,12 @@ $(function () {
         if (key == "T") {
             UpdateHandles.update();
         }
-        else if (key == "O") {
-            Client.opTest(client0);
-        }
         else if (key == "S") {
-            Client.opTest1(client0);
+            Client.opTestSpeed(Client.currOpClient);
         }
         else if (key == "I") {
-            console.log(client0.game.players.list[0].units.list[0]);
-            console.log(Server.getInst().players.list[0].units.list[0]);
+            //console.log(client0.game.players.list[0].units.list[0]);
+            //console.log(Server.getInst().players.list[0].units.list[0]);
             //console.log(client1.game.players.list[0].units.list[0]);
             //console.log(Server.getInst().players.list[1].units.list[0]);
         }

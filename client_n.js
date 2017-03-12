@@ -16,7 +16,7 @@ var Client = {
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
-        var conn = new Connection(divId, 0.1, 0.2,
+        var conn = new Connection(divId, 0.1, 0,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
@@ -26,6 +26,26 @@ var Client = {
 
         client.conn = conn;
         client.updateHandle = updateHandle;
+        Client.currOpClient = client;
+
+        $('#'+divId).click(function (e) {
+            var rect0 = $(this)[0].getBoundingClientRect();
+            var x = Math.floor(e.clientX - rect0.left);
+            var y = Math.floor(e.clientY - rect0.top);
+            var client = Client.allClient[this.id];
+            Client.currOpClient = client;
+            x = -(client.width/2 - x);
+            y = client.height/2 - y;
+            client.conn.clientSend({
+                type: "op",
+                unitsInfo: [
+                    {
+                        id: client.game.players.list[0].units.list[0].id,
+                        target: new THREE.Vector3(x, y, 0),
+                    },
+                ],
+            });
+        });
         return client;
     },
     addLocalUnits: function (client, unitsInfo) {
@@ -37,25 +57,33 @@ var Client = {
                 client.color);
         }
     },
-    opTest1: function (client) {
+    opTestSpeed: function (client) {
+        var unit = client.game.players.list[0].units.list[0];
+        var speed = unit.sync.speed;
+        if (speed >= 50) {
+            speed /= 2;
+        }
+        else {
+            speed *= 2;
+        }
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
-                    id: 2,
-                    speed: 70,
+                    id: unit.id,
+                    speed: speed,
                 },
             ],
         });
     },
     opTest: function (client) {
-        client.sceneInfo.scene.add(util.newPlane(100, 100, 10, 10, 0x0000ff));
+        client.sceneInfo.scene.add(util.newPlane(180, 180, 10, 10, 0x0000ff));
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
-                    id: 1,
-                    target: new THREE.Vector3(100, 100, 0),
+                    id: client.game.players.list[0].units.list[0].id,
+                    target: new THREE.Vector3(180, 180, 0),
                 },
             ],
         })
