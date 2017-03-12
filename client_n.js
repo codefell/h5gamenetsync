@@ -19,7 +19,7 @@ var Client = {
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
-        var conn = new Connection(divId, 0.1, 0.,
+        var conn = new Connection(divId, 0, 0,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
@@ -93,7 +93,6 @@ var Client = {
         ClientGame.start(client.game);
     },
     onSync: function (client, msg) {
-        console.log("onSync", client.divId, msg);
         ClientGame.sync(client.game, msg.frameIndex,
             msg.syncState);
     },
@@ -128,7 +127,6 @@ var ClientGame = {
     start: function (cg) {
         cg.start = true;
         cg.startTime = UpdateHandles.time;
-        console.log(cg.playerId, "start", cg.startTime);
     },
 
     getPlayer: function (cg, playerId) {
@@ -159,7 +157,6 @@ var ClientGame = {
     update: function (cg) {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
-        console.log(cg.playerId, currFrame);
         var deltaSimuFrame = currFrame - cg.simuFrame;
         var cpHead = Math.min(
                 cg.showCpStart + 6,
