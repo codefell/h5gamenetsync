@@ -70,7 +70,7 @@ var Server = {
                 });
             }
         }
-        if (readyNum == 1) {
+        if (readyNum == 2) {
             server.start = true; 
             server.startTime = UpdateHandles.time;
             Server.sendMsg(server, {

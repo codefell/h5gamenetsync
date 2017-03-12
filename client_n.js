@@ -9,9 +9,12 @@ var Client = {
             width: je.width(),
             height: je.height(),
         };
-        client.sceneInfo.scene.add(util.newPlane(0, 0, 10, 10, 0x0000ff));
         client.game = ClientGame.create(divId, color, client),
         Client.allClient[divId] = client;
+        util.makeGrid(client.sceneInfo.scene,
+            20,
+            je.width(),
+            je.height());
 
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
@@ -49,13 +52,18 @@ var Client = {
         });
     },
     opTest: function (client) {
-        client.sceneInfo.scene.add(util.newPlane(100, 100, 10, 10, 0x0000ff));
+        /*
+        for (var i in Client.allClient) {
+            var c = Client.allClient[i];
+            c.sceneInfo.scene.add(util.newPlane(100, 20, 20, 20, 0x0000ff));
+        }
+        */
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
                     id: 1,
-                    target: new THREE.Vector3(100, 100, 0),
+                    target: new THREE.Vector3(50, 0, 0),
                 },
             ],
         })
@@ -85,6 +93,7 @@ var Client = {
         ClientGame.start(client.game);
     },
     onSync: function (client, msg) {
+        console.log("onSync", client.divId, msg);
         ClientGame.sync(client.game, msg.frameIndex,
             msg.syncState);
     },
@@ -119,6 +128,7 @@ var ClientGame = {
     start: function (cg) {
         cg.start = true;
         cg.startTime = UpdateHandles.time;
+        console.log(cg.playerId, "start", cg.startTime);
     },
 
     getPlayer: function (cg, playerId) {
@@ -149,6 +159,7 @@ var ClientGame = {
     update: function (cg) {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
+        console.log(cg.playerId, currFrame);
         var deltaSimuFrame = currFrame - cg.simuFrame;
         var cpHead = Math.min(
                 cg.showCpStart + 6,
@@ -284,7 +295,7 @@ var ClientUnit = {
             id: id,
             color: player.color,
             player: player,
-            sprite: util.newPlane(x, y, 20, 20, player.color),
+            sprite: util.newPlane(util.gridX(x), util.gridY(y), 20, 20, player.color),
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
                 target: new THREE.Vector3(x, y, 0),
@@ -327,7 +338,7 @@ var ClientUnit = {
     },
 
     update: function (cu, frame, simuFrame, cpAlpha) {
-        cu.sprite.position.x = cu.show.pos.x;
-        cu.sprite.position.y = cu.show.pos.y;
+        cu.sprite.position.x = util.gridX(cu.show.pos.x);
+        cu.sprite.position.y = util.gridY(cu.show.pos.y);
     },
 };

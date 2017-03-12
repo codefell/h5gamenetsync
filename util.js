@@ -59,5 +59,36 @@ var util = {
         }
         return newArr;
     },
+    newLine: function (x0, y0, x1, y1, color) {
+        var material = new THREE.LineBasicMaterial({ color: color});
+        var geometry = new THREE.Geometry();
+        geometry.vertices.push(new THREE.Vector3(x0, y0, 0));
+        geometry.vertices.push(new THREE.Vector3(x1, y1, 0));
+        var line = new THREE.Line(geometry, material);
+        return line;
+    },
+    makeMeasure: function (num) {
+        var je = $("#Measure");
+        for (var i = 0; i < num; i++) {
+            je.append("<div>" + i + "</div>");
+        }
+    },
+    makeGrid: function(scene, gridSize, width, height) {
+        for (var i = -width/2; i < width/2; i+= gridSize) {
+            var line = util.newLine(i, height/2, i, -height/2, 0xff0000);
+            scene.add(line);
+        }
+    },
+    gridX: function(x) {
+        x = Math.floor(x);
+        var gridSize = 20;
+        var width = 1200;
+        return -width / 2 + gridSize / 2 + x * gridSize;
+    },
+    gridY: function(y) {
+        y = Math.floor(y);
+        var gridSize = 20;
+        return gridSize / 2 + y * gridSize;
+    },
 };
 

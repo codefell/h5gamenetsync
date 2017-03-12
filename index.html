@@ -20,15 +20,28 @@
     <!--script type="text/javascript" src="test.js"></script-->
     <style>
         #WebGLoutput0 {
-            width: 400px;
-            height: 400px;
+            width: 1200px;
+            height: 80px;
             float: left;
         }
         #WebGLoutput1 {
-            margin-left: 20px;
-            width: 400px;
-            height: 400px;
+            margin-top: 10px;
+            width: 1200px;
+            height: 80px;
             float: left;
+            clear: left;
+        }
+        #Measure {
+            float: left;
+            clear: left;
+        }
+        #Measure > div {
+            margin-top: 5px;
+            float: left;
+            width: 20px;
+            height: 0.8em;
+            font-size: 0.8em;
+            text-align: center;
         }
     </style>
 </head>
@@ -37,9 +50,14 @@
 <!-- Div which will hold the Output -->
 <div id="WebGLoutput0">
 </div>
+<div id="Measure">
+</div>
 <div id="WebGLoutput1">
 </div>
-<button id="action" style="clear: both">action</button>
+<div style="float: left">
+<button id="action">action</button>
+<button id="next">next</button>
+<div>
 
 </body>
 </html>

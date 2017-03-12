@@ -16,7 +16,7 @@ function initScene(eid) {
 
     // create a render and set the size
     var renderer = new THREE.WebGLRenderer();
-    renderer.setClearColor(new THREE.Color(0xEEEEEE));
+    renderer.setClearColor(new THREE.Color(0x0));
     //renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setSize(width, height);
 
@@ -79,11 +79,11 @@ var UpdateHandles = {
     },
     update: function () {
         //test
-        UpdateHandles.time = util.time();
-        //UpdateHandles.time = UpdateHandles.lastUpdateTime + config.frameInterval; //util.time();
+        //UpdateHandles.time = util.time();
+        UpdateHandles.time = UpdateHandles.lastUpdateTime + config.frameInterval;
         UpdateHandles.deltaTime = 
             UpdateHandles.time - UpdateHandles.lastUpdateTime;
-        requestAnimationFrame(UpdateHandles.update);
+        //requestAnimationFrame(UpdateHandles.update);
         
         for (i in UpdateHandles.handles) {
             handle = UpdateHandles.handles[i];
@@ -110,4 +110,4 @@ var UpdateHandles = {
     },
 };
 
-$(function () {UpdateHandles.update();});
+//$(function () {UpdateHandles.update();});
