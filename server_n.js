@@ -98,28 +98,29 @@ var Server = {
                 (UpdateHandles.time - server.startTime)
                 / config.frameInterval);
 
-    //    if (server.syncState.length > 0 || (frameNum % 2 == 0)) {
-            var deltaFrame = frameNum - server.syncFrame;
-
+        var deltaFrame = frameNum - server.syncFrame;
+        if (server.syncState.length > 0) {
             Server.sync(server, deltaFrame);
-
             for (var i in server.syncState){
                 var playerSyncState = server.syncState[i];
                 var player = MapList.get(server.players, playerSyncState.playerId);
                 ServerPlayer.setSyncState(player, playerSyncState.units);
             }
+            server.syncFrame = frameNum;
+        }
 
+        if (server.syncState.length > 0 || (frameNum % 6 == 0)) {
+            console.log("server send sync msg on frame", frameNum);
             Server.sendMsg(server, {
                 type: "sync",
                 frameIndex: frameNum,
                 syncState: server.syncState,
             });
+        }
 
-            //if (server.syncState.length > 0) {
-                server.syncState = [];
-                server.syncFrame = frameNum;
-            //}
-     //   }
+        if (server.syncState.length > 0) {
+            server.syncState = [];
+        }
     },
 };
 
