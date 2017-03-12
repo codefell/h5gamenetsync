@@ -16,7 +16,7 @@ var Client = {
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
-        var conn = new Connection(divId, 0.1, 0.,
+        var conn = new Connection(divId, 0.1, 0.2,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
