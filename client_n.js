@@ -174,11 +174,10 @@ var ClientGame = {
                 cpAlpha = 1 / 6;
                 cg.showCpLast++;
             }
+            //which should be evaled first, pos or ai
             MapList.call(cg.players, ClientPlayer.simu1f);
             MapList.call(cg.players, ClientPlayer.show1f, cpAlpha);
-            if (cg.simuFrame % 2 == 0) {
-                MapList.call(cg.players, ClientPlayer.simuai1f);
-            }
+            MapList.call(cg.players, ClientPlayer.simuai1f);
             cg.simuFrame++;
         }
 
@@ -187,9 +186,7 @@ var ClientGame = {
                 var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
-                    if (cg.syncFrame % 2 == 0) {
-                        MapList.call(cg.players, ClientPlayer.syncai1f);
-                    }
+                    MapList.call(cg.players, ClientPlayer.syncai1f);
                     cg.syncFrame++;
                 }
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
@@ -205,9 +202,7 @@ var ClientGame = {
             deltaSimuFrame = Math.min(deltaSimuFrame, 6);
             for (var i = 0; i < deltaSimuFrame; i++) {
                 MapList.call(cg.players, ClientPlayer.simu1f);
-                if (cg.simuFrame % 2 == 0) {
-                    MapList.call(cg.players, ClientPlayer.simuai1f);
-                }
+                MapList.call(cg.players, ClientPlayer.simuai1f);
                 cg.simuFrame++;
             }
 
@@ -234,7 +229,6 @@ var ClientPlayer = {
         };
     },
     setSyncInfo: function (cp, syncInfo) {
-        console.log(syncInfo);
         var unitsInfo = syncInfo.unitsInfo || [];
         for (var i in unitsInfo) {
             var unitInfo = unitsInfo[i];
@@ -247,8 +241,7 @@ var ClientPlayer = {
             var fireInfo = firesInfo[i];
             var unit = MapList.get(cp.units, fireInfo.id);
             //ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.sync.pos.x, 1, fireInfo.speed);
-            var bulletUnit = MapList.get(cp.units, fireInfo.bulletId);
-            ClientUnit.fire(bulletUnit, fireInfo.bulletId, fireInfo.speed);
+            ClientUnit.fire(unit, fireInfo.bulletId, fireInfo.speed);
             //bulletUnit.sync.fireInfo = {
             //bulletUnit.sync.target.set(58, 1, 0);
         }
@@ -289,8 +282,9 @@ var ClientPlayer = {
         if (id == 0) {
             id = ClientUnit.nextId();
         }
-        MapList.add(cp.units,
-            ClientUnit.create(id, x, y, speed, cp));
+        var unit = ClientUnit.create(id, x, y, speed, cp);
+        MapList.add(cp.units, unit);
+        return unit;
     },
     sync1f: function (cp) {
         MapList.call(cp.units, ClientUnit.sync1f);
@@ -328,8 +322,12 @@ var ClientUnit = {
             speed: cu.sync.speed,
         };
     },
-    fire: function (bulletUnit, fireInfo.bulletId, fireInfo.speed) {
-
+    fire: function (cu, id, speed) {
+        cu.fireInfo = {
+            id: id,
+            speed: speed,
+            fireFrame: cu.player.game.syncFrame + 6,
+        };
     },
     setSyncInfo: function(cu, syncState) {
         if (syncState.target) {
@@ -377,9 +375,28 @@ var ClientUnit = {
     },
 
     syncai1f: function (cu) {
+        if (cu.player.game.simuFrame % 2 != 0) {
+            //return;
+        }
+        //syncai
+        if (cu.fireInfo) {
+            if (cu.player.game.syncFrame >= cu.fireInfo.fireFrame) {
+                var unit = ClientPlayer.addUnit(cu.player,
+                    cu.fireInfo.id,
+                    cu.sync.pos.x,
+                    1,
+                    cu.fireInfo.speed);
+                unit.sync.target.set(58, 1, 0);
+                cu.fireInfo = undefined;
+            }
+        }
     },
 
     simuai1f: function (cu) {
+        if (cu.player.game.simuFrame % 2 != 0) {
+            //return;
+        }
+        //simuai
     },
 
     setCompensate: function (cu) {
