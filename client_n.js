@@ -158,6 +158,61 @@ var ClientGame = {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
         var deltaSimuFrame = currFrame - cg.simuFrame;
+        deltaSimuFrame = Math.min(deltaSimuFrame, 6);
+        for (var i = 0; i < deltaSimuFrame; i++) {
+            var cpAlpha = 0;
+            if (cg.showCpLast < cg.showCpStart + 6) {
+                cpAlpha = 1 / 6;
+                cg.showCpLast++;
+            }
+            MapList.call(cg.players, ClientPlayer.simu1f);
+            MapList.call(cg.players, ClientPlayer.show1f, cpAlpha);
+            if (cg.simuFrame % 2 == 0) {
+                MapList.call(cg.players, ClientPlayer.simuai1f);
+            }
+            cg.simuFrame++;
+        }
+
+        if (cg.syncInfo.length > 0) {
+            for (var i in cg.syncInfo) {
+                var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
+                for (var j = 0; j < deltaSyncFrame; j++) {
+                    MapList.call(cg.players, ClientPlayer.sync1f);
+                    if (cg.syncFrame % 2 == 0) {
+                        MapList.call(cg.players, ClientPlayer.syncai1f);
+                    }
+                    cg.syncFrame++;
+                }
+                for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
+                    var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
+                    var player = MapList.get(cg.players, playerSyncInfo.playerId);
+                    ClientPlayer.setSyncInfo(player, playerSyncInfo.units);
+                }
+            }
+            //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
+            //wait for new syncinfo
+            cg.simuFrame = cg.syncFrame;
+            var deltaSimuFrame = currFrame - cg.syncFrame;
+            deltaSimuFrame = Math.min(deltaSimuFrame, 6);
+            for (var i = 0; i < deltaSimuFrame; i++) {
+                MapList.call(cg.players, ClientPlayer.simu1f);
+                if (cg.simuFrame % 2 == 0) {
+                    MapList.call(cg.players, ClientPlayer.simuai1f);
+                }
+                cg.simuFrame++;
+            }
+
+            MapList.call(cg.players, ClientPlayer.setCompensate);
+            cg.showCpStart = currFrame;
+            cg.showCpLast = currFrame;
+            cg.syncInfo = [];
+        }
+        MapList.call(cg.players, ClientPlayer.update);
+    },
+    update_out: function (cg) {
+        var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
+            / config.frameInterval);
+        var deltaSimuFrame = currFrame - cg.simuFrame;
         var cpHead = Math.min(
                 cg.showCpStart + 6,
                 currFrame);
@@ -249,17 +304,23 @@ var ClientPlayer = {
         MapList.add(cp.units,
             ClientUnit.create(id, x, y, speed, cp));
     },
-    sync: function (cp, deltaFrame) {
-        MapList.call(cp.units, ClientUnit.sync, deltaFrame);
+    sync1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.sync1f);
     },
-    simu: function (cp, deltaFrame) {
-        MapList.call(cp.units, ClientUnit.simu, deltaFrame);
+    syncai1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.syncai1f);
+    },
+    simu1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.simu1f);
+    },
+    simuai1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.simuai1f);
+    },
+    show1f: function (cp, cpAlpha) {
+        MapList.call(cp.units, ClientUnit.show1f, cpAlpha);
     },
     setCompensate: function (cp) {
         MapList.call(cp.units, ClientUnit.setCompensate);
-    },
-    simuShow: function (cp, deltaFrame, cpAlpha) {
-        MapList.call(cp.units, ClientUnit.simuShow, deltaFrame, cpAlpha);
     },
     update: function (cp) {
         MapList.call(cp.units, ClientUnit.update);
@@ -300,6 +361,7 @@ var ClientUnit = {
             },
             simu: {
                 pos: new THREE.Vector3(x, y, 0),
+                lastSimuTranslate: new THREE.Vector3(),
             },
             show: {
                 pos: new THREE.Vector3(x, y, 0),
@@ -310,26 +372,34 @@ var ClientUnit = {
         return unit;
     },
 
-    sync: function (cu, deltaFrame) {
+    sync1f: function (cu) {
         cu.sync.pos = util.move(cu.sync.pos,
-                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
+                cu.sync.target, cu.sync.speed, config.frameInterval);
         cu.simu.pos.copy(cu.sync.pos);
+    },
+
+    simu1f: function (cu) {
+        var oldSimuPos = cu.simu.pos.clone();
+        cu.simu.pos = util.move(cu.simu.pos,
+                cu.sync.target, cu.sync.speed, config.frameInterval);
+        cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
+    },
+
+    syncai1f: function (cu) {
+    },
+
+    simuai1f: function (cu) {
     },
 
     setCompensate: function (cu) {
         cu.show.cpPos.copy(cu.simu.pos).sub(cu.show.pos);
     },
 
-    simu: function (cu, deltaFrame) {
-        var oldSimuPos = cu.simu.pos.clone();
-        cu.simu.pos = util.move(cu.simu.pos,
-                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
-        return cu.simu.pos.clone().sub(oldSimuPos);
-    },
-
-    simuShow: function (cu, deltaFrame, cpAlpha) {
-        var deltaSimuPos = ClientUnit.simu(cu, deltaFrame);
-        cu.show.pos.add(deltaSimuPos);
+    show1f: function (cu, cpAlpha) {
+        //var deltaSimuPos = ClientUnit.simu(cu, deltaFrame);
+        //cu.show.pos.add(deltaSimuPos);
+        cu.show.pos.add(cu.simu.lastSimuTranslate);
+        cu.simu.lastSimuTranslate.set(0, 0, 0);
         var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
         cu.show.pos.add(cpPos)
     },

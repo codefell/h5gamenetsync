@@ -10,8 +10,8 @@ $(function () {
     $(document).keydown(function (e) {
         var key = String.fromCharCode(e.which);
         if (key == "I") {
-            console.log(client0.game);
-            console.log(client1.game);
+            console.log(client0.game.players.list[0].units.list[0]);
+            console.log(client1.game.players.list[1].units.list[0]);
             //console.log(client1.game.players.list[0].units.list[0]);
             //console.log(Server.getInst().players.list[1].units.list[0]);
         }

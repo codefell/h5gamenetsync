@@ -90,9 +90,6 @@ var Server = {
             player.conn.serverSend(msg);
         }
     },
-    sync: function (server, deltaFrame) {
-        MapList.call(server.players, ServerPlayer.sync, deltaFrame);
-    },
     update: function (server) {
         var frameNum = Math.floor(
                 (UpdateHandles.time - server.startTime)
@@ -101,7 +98,12 @@ var Server = {
     //    if (server.syncState.length > 0 || (frameNum % 2 == 0)) {
             var deltaFrame = frameNum - server.syncFrame;
 
-            Server.sync(server, deltaFrame);
+            for (var i = 0; i < deltaFrame; i++) {
+                MapList.call(server.players, ServerPlayer.sync1f);
+                if ((server.syncFrame + i) % 2 == 0) {
+                    MapList.call(server.players, ServerPlayer.syncai1f);
+                }
+            }
 
             for (var i in server.syncState){
                 var playerSyncState = server.syncState[i];
@@ -162,8 +164,11 @@ var ServerPlayer = {
             MapList.add(sp.units, unit);
         }
     },
-    sync: function (sp, deltaFrame) {
-        MapList.call(sp.units, ServerUnit.sync, deltaFrame);
+    sync1f: function (sp) {
+        MapList.call(sp.units, ServerUnit.sync1f);
+    },
+    syncai1f: function (sp, deltaFrame) {
+        MapList.call(sp.units, ServerUnit.syncai1f);
     },
 };
 
@@ -192,9 +197,11 @@ var ServerUnit = {
             su.speed = unitInfo.speed;
         }
     },
-    sync: function (su, deltaFrame) {
+    sync1f: function (su) {
         var oldPos = su.pos.clone();
         su.pos = util.move(su.pos,
-            su.target, su.speed, deltaFrame * config.frameInterval);
+            su.target, su.speed, config.frameInterval);
+    },
+    syncai1f: function (cu) {
     },
 };
