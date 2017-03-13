@@ -1,7 +1,7 @@
 $(function () {
 
     $("#action").click(function () {
-        Client.opTest(client0);
+        Client.opTest(client1);
     });
     $("#next").click(function () {
        UpdateHandles.update();
@@ -10,10 +10,11 @@ $(function () {
     $(document).keydown(function (e) {
         var key = String.fromCharCode(e.which);
         if (key == "I") {
-            console.log(client0.game.players.list[0].units.list[0]);
-            console.log(client1.game.players.list[1].units.list[0]);
-            //console.log(client1.game.players.list[0].units.list[0]);
-            //console.log(Server.getInst().players.list[1].units.list[0]);
+            console.log(client0.game.players.list[1].units.list);
+            console.log(client1.game.players.list[0].units.list);
+        }
+        else if (key == "F") {
+            Client.opFire(client0);
         }
     });
 
@@ -39,13 +40,11 @@ $(function () {
     ]);
 
     Client.addLocalUnits(client1, [
-    /*
         {
-            x: -20,
-            y: 20,
-            speed: 35,
+            x: 0,
+            y: -1,
+            speed: 30,
         },
-        */
         /*
         {
             x: 40,

@@ -81,7 +81,8 @@ var Server = {
     onOp: function (server, conn, msg) {
         server.syncState.push({
             playerId: conn.id,
-            units: msg.unitsInfo,
+            unitsInfo: msg.unitsInfo,
+            firesInfo: msg.firesInfo,
         });
     },
     sendMsg: function (server, msg) {
@@ -108,7 +109,7 @@ var Server = {
             for (var i in server.syncState){
                 var playerSyncState = server.syncState[i];
                 var player = MapList.get(server.players, playerSyncState.playerId);
-                ServerPlayer.setSyncState(player, playerSyncState.units);
+                ServerPlayer.setSyncInfo(player, playerSyncState);
             }
 
             Server.sendMsg(server, {
@@ -146,12 +147,24 @@ var ServerPlayer = {
         };
         return info;
     },
-    setSyncState: function (sp, unitsInfo) {
+    setSyncInfo: function (sp, syncInfo) {
+        var unitsInfo = syncInfo.unitsInfo || [];
         for (var i in unitsInfo) {
             var unitInfo = unitsInfo[i];
             var unit = MapList.get(sp.units, unitInfo.id);
-            ServerUnit.setSyncState(unit, unitInfo);
+            ServerUnit.setSyncInfo(unit, unitInfo);
         }
+
+        var firesInfo = syncInfo.firesInfo || [];
+        for (var i in firesInfo) {
+            var fireInfo = firesInfo[i];
+            var unit = MapList.get(sp.units, fireInfo.id);
+            ServerPlayer.addUnit(sp, fireInfo.bulletId, unit.x, 1, fireInfo.speed);
+        }
+    },
+    addUnit: function (sp, id, x, y, speed) {
+        var unit = ServerUnit.create(id, x, y, speed);
+        MapList.add(sp.units, unit);
     },
     setPlayerInfo: function (sp, playerInfo) {
         var unitsInfo = playerInfo.units;
@@ -189,7 +202,7 @@ var ServerUnit = {
             speed: su.speed,
         };
     },
-    setSyncState: function (su, unitInfo) {
+    setSyncInfo: function (su, unitInfo) {
         if (unitInfo.target) {
             su.target = unitInfo.target;
         }

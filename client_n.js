@@ -40,29 +40,38 @@ var Client = {
                 client.color);
         }
     },
+    opFire: function (client) {
+        var unit = client.game.players.list[0].units.list[0];
+        client.conn.clientSend({
+            type: "op",
+            firesInfo: [
+                {
+                    id: unit.id,
+                    bulletId: ClientUnit.nextId(),
+                    speed: 50,
+                },
+            ],
+        });
+    },
     opTest1: function (client) {
+        var unit = client.game.players.list[0].units.list[0];
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
-                    id: 2,
+                    id: unit.id,
                     speed: 70,
                 },
             ],
         });
     },
     opTest: function (client) {
-        /*
-        for (var i in Client.allClient) {
-            var c = Client.allClient[i];
-            c.sceneInfo.scene.add(util.newPlane(100, 20, 20, 20, 0x0000ff));
-        }
-        */
+        var unit = client.game.players.list[0].units.list[0];
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
-                    id: 1,
+                    id: unit.id,
                     target: new THREE.Vector3(50, 0, 0),
                 },
             ],
@@ -186,7 +195,7 @@ var ClientGame = {
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
                     var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
                     var player = MapList.get(cg.players, playerSyncInfo.playerId);
-                    ClientPlayer.setSyncInfo(player, playerSyncInfo.units);
+                    ClientPlayer.setSyncInfo(player, playerSyncInfo);
                 }
             }
             //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
@@ -209,41 +218,6 @@ var ClientGame = {
         }
         MapList.call(cg.players, ClientPlayer.update);
     },
-    update_out: function (cg) {
-        var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
-            / config.frameInterval);
-        var deltaSimuFrame = currFrame - cg.simuFrame;
-        var cpHead = Math.min(
-                cg.showCpStart + 6,
-                currFrame);
-        var cpAlpha = (cpHead - cg.showCpLast) / 6;
-        cg.showCpLast = cpHead;
-        MapList.call(cg.players, ClientPlayer.simuShow, deltaSimuFrame, cpAlpha);
-        cg.simuFrame = currFrame;
-
-        if (cg.syncInfo.length > 0) {
-            for (var i in cg.syncInfo) {
-                var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
-                MapList.call(cg.players, ClientPlayer.sync, deltaSyncFrame);
-                cg.syncFrame = cg.syncInfo[i].syncFrame;
-                for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
-                    var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
-                    var player = MapList.get(cg.players, playerSyncInfo.playerId);
-                    ClientPlayer.setSyncInfo(player, playerSyncInfo.units);
-                }
-            }
-            //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
-            //wait for new syncinfo
-            var deltaSimuFrame = currFrame - cg.syncFrame;
-            MapList.call(cg.players, ClientPlayer.simu, deltaSimuFrame);
-            cg.simuFrame = currFrame;
-            MapList.call(cg.players, ClientPlayer.setCompensate);
-            cg.showCpStart = currFrame;
-            cg.showCpLast = currFrame;
-            cg.syncInfo = [];
-        }
-        MapList.call(cg.players, ClientPlayer.update);
-    },
 };
 
 var ClientPlayer = {
@@ -259,12 +233,24 @@ var ClientPlayer = {
             units: MapList.create(),
         };
     },
-    setSyncInfo: function (cp, syncState) {
-        for (var i in syncState) {
-            var unitSyncState = syncState[i];
-            var unit = MapList.get(cp.units, unitSyncState.id);
-            ClientUnit.setSyncInfo(unit, unitSyncState);
+    setSyncInfo: function (cp, syncInfo) {
+        console.log(syncInfo);
+        var unitsInfo = syncInfo.unitsInfo || [];
+        for (var i in unitsInfo) {
+            var unitInfo = unitsInfo[i];
+            var unit = MapList.get(cp.units, unitInfo.id);
+            ClientUnit.setSyncInfo(unit, unitInfo);
         }
+
+        var firesInfo = syncInfo.firesInfo || [];
+        for (var i in firesInfo) {
+            var fireInfo = firesInfo[i];
+            var unit = MapList.get(cp.units, fireInfo.id);
+            ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.x, 1, fireInfo.speed);
+            var bulletUnit = MapList.get(cp.units, fireInfo.bulletId);
+            bulletUnit.sync.target.set(58, 1, 0);
+        }
+
     },
     getInfo: function (cp) {
         var units = [];
