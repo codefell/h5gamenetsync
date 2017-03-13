@@ -19,8 +19,9 @@ var util = {
     move: function (pos0, pos1, speed, time) {
         var v = pos1.clone().sub(pos0);
         var dis = speed * time;
-        if (dis > v.length()) {
-            dis = v.length();
+        var vlen = v.length();
+        if (dis > vlen) {
+            dis = vlen;
         }
         v.normalize().multiplyScalar(dis);
         return v.add(pos0);

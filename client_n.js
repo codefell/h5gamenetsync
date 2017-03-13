@@ -412,7 +412,7 @@ var ClientUnit = {
         cu.show.pos.add(cpPos)
     },
 
-    update: function (cu, frame, simuFrame, cpAlpha) {
+    update: function (cu) {
         cu.sprite.position.x = util.gridX(cu.show.pos.x);
         cu.sprite.position.y = util.gridY(cu.show.pos.y);
     },
