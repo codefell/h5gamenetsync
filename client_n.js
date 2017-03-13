@@ -246,9 +246,11 @@ var ClientPlayer = {
         for (var i in firesInfo) {
             var fireInfo = firesInfo[i];
             var unit = MapList.get(cp.units, fireInfo.id);
-            ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.x, 1, fireInfo.speed);
+            //ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.sync.pos.x, 1, fireInfo.speed);
             var bulletUnit = MapList.get(cp.units, fireInfo.bulletId);
-            bulletUnit.sync.target.set(58, 1, 0);
+            ClientUnit.fire(bulletUnit, fireInfo.bulletId, fireInfo.speed);
+            //bulletUnit.sync.fireInfo = {
+            //bulletUnit.sync.target.set(58, 1, 0);
         }
 
     },
@@ -325,6 +327,9 @@ var ClientUnit = {
             y: cu.sync.pos.y,
             speed: cu.sync.speed,
         };
+    },
+    fire: function (bulletUnit, fireInfo.bulletId, fireInfo.speed) {
+
     },
     setSyncInfo: function(cu, syncState) {
         if (syncState.target) {

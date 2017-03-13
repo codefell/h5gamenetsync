@@ -159,7 +159,7 @@ var ServerPlayer = {
         for (var i in firesInfo) {
             var fireInfo = firesInfo[i];
             var unit = MapList.get(sp.units, fireInfo.id);
-            ServerPlayer.addUnit(sp, fireInfo.bulletId, unit.x, 1, fireInfo.speed);
+            ServerPlayer.addUnit(sp, fireInfo.bulletId, unit.pos.x, 1, fireInfo.speed);
         }
     },
     addUnit: function (sp, id, x, y, speed) {

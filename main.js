@@ -14,7 +14,7 @@ $(function () {
             console.log(client1.game.players.list[0].units.list);
         }
         else if (key == "F") {
-            Client.opFire(client0);
+            Client.opFire(client1);
         }
     });
 
