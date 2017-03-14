@@ -1,26 +1,4 @@
-var allTexIds = [
-    "idle.0",
-];
-var allTexs = {
-};
-
 $(function () {
-    var num = 0;
-    var loader = new THREE.TextureLoader();
-    for (var i = 0; i < allTexIds.length; i++) {
-        var id = allTexIds[i];
-        loader.load("image/" + id + ".png",
-            function (texture) {
-                allTexs[id] = texture;
-                num++;
-                if (num == allTexIds.length) {
-                    entry();
-                }
-            });
-    }
-});
-
-function entry() {
 
     $("#action").click(function () {
         Client.opTest(client1);
@@ -32,8 +10,8 @@ function entry() {
     $(document).keydown(function (e) {
         var key = String.fromCharCode(e.which);
         if (key == "I") {
-            console.log(client0.game.players.list[1].units.list);
-            console.log(client1.game.players.list[0].units.list);
+            console.log(client0.game.players.list[0].units.list[0]);
+            //console.log(client1.game.players.list[0].units.list);
         }
         else if (key == "E") {
             Server.eval(Server.getInst());
@@ -85,4 +63,4 @@ function entry() {
     Client.login(client1);
     Client.ready(client0);
     Client.ready(client1);
-}
+});

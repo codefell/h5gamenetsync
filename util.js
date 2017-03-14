@@ -2,18 +2,13 @@ var util = {
     time: function() {
         return (new Date().getTime()) / 1000.0;
     },
-    newPlane: function (x, y, w, h, color) {
+    newPlane: function (x, y, w, h) {
         // create the ground plane
         var planeGeometry = new THREE.PlaneGeometry(w, h);
         var planeMaterial = new THREE.MeshBasicMaterial({
             transparent: true,
+            map: THREE.ImageUtils.loadTexture("image/snake/idle/0.png"),
         });
-        (function (mat) {
-            new THREE.TextureLoader().load("image/idle.0.png",
-                function (texture) {
-                    mat.map = texture;
-                });
-        })(planeMaterial);
 
         var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
