@@ -13,6 +13,12 @@ $(function () {
             console.log(client0.game.players.list[1].units.list);
             console.log(client1.game.players.list[0].units.list);
         }
+        else if (key == "E") {
+            Server.eval(Server.getInst());
+        }
+        else if (key == "S") {
+            console.log(Server.getInst().players);
+        }
         else if (key == "F") {
             Client.opFire(client1);
         }

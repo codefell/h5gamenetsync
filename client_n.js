@@ -103,7 +103,7 @@ var Client = {
     },
     onSync: function (client, msg) {
         ClientGame.sync(client.game, msg.frameIndex,
-            msg.syncState);
+            msg.syncInfo);
     },
 
     recvHandler: function (client, msg) {
@@ -329,12 +329,12 @@ var ClientUnit = {
             fireFrame: cu.player.game.syncFrame + 6,
         };
     },
-    setSyncInfo: function(cu, syncState) {
-        if (syncState.target) {
-            cu.sync.target = syncState.target;
+    setSyncInfo: function(cu, syncInfo) {
+        if (syncInfo.target) {
+            cu.sync.target = syncInfo.target;
         }
-        if (syncState.speed) {
-            cu.sync.speed = syncState.speed;
+        if (syncInfo.speed) {
+            cu.sync.speed = syncInfo.speed;
         }
     },
     create: function (id, x, y, speed, player) {
