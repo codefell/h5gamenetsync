@@ -1,4 +1,26 @@
+var allTexIds = [
+    "idle.0",
+];
+var allTexs = {
+};
+
 $(function () {
+    var num = 0;
+    var loader = new THREE.TextureLoader();
+    for (var i = 0; i < allTexIds.length; i++) {
+        var id = allTexIds[i];
+        loader.load("image/" + id + ".png",
+            function (texture) {
+                allTexs[id] = texture;
+                num++;
+                if (num == allTexIds.length) {
+                    entry();
+                }
+            });
+    }
+});
+
+function entry() {
 
     $("#action").click(function () {
         Client.opTest(client1);
@@ -63,4 +85,4 @@ $(function () {
     Client.login(client1);
     Client.ready(client0);
     Client.ready(client1);
-});
+}

@@ -5,7 +5,16 @@ var util = {
     newPlane: function (x, y, w, h, color) {
         // create the ground plane
         var planeGeometry = new THREE.PlaneGeometry(w, h);
-        var planeMaterial = new THREE.MeshBasicMaterial({color: color});
+        var planeMaterial = new THREE.MeshBasicMaterial({
+            transparent: true,
+        });
+        (function (mat) {
+            new THREE.TextureLoader().load("image/idle.0.png",
+                function (texture) {
+                    mat.map = texture;
+                });
+        })(planeMaterial);
+
         var plane = new THREE.Mesh(planeGeometry, planeMaterial);
 
         // rotate and position the plane

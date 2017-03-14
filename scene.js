@@ -16,7 +16,7 @@ function initScene(eid) {
 
     // create a render and set the size
     var renderer = new THREE.WebGLRenderer();
-    renderer.setClearColor(new THREE.Color(0x0));
+    renderer.setClearColor(new THREE.Color(0xffffff));
     //renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setSize(width, height);
 
