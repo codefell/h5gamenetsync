@@ -67,12 +67,16 @@ var Client = {
     },
     opTest: function (client) {
         var unit = client.game.players.list[0].units.list[0];
+        var status = "move";
+        if (unit.sync.status == "move") {
+            status = "idle";
+        }
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
                     id: unit.id,
-                    target: new THREE.Vector3(50, 0, 0),
+                    status: status,
                 },
             ],
         })
@@ -177,7 +181,6 @@ var ClientGame = {
             //which should be evaled first, pos or ai
             MapList.call(cg.players, ClientPlayer.simu1f);
             MapList.call(cg.players, ClientPlayer.show1f, cpAlpha);
-            MapList.call(cg.players, ClientPlayer.simuai1f);
             cg.simuFrame++;
         }
 
@@ -186,7 +189,6 @@ var ClientGame = {
                 var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
-                    MapList.call(cg.players, ClientPlayer.syncai1f);
                     cg.syncFrame++;
                 }
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
@@ -202,7 +204,6 @@ var ClientGame = {
             deltaSimuFrame = Math.min(deltaSimuFrame, 6);
             for (var i = 0; i < deltaSimuFrame; i++) {
                 MapList.call(cg.players, ClientPlayer.simu1f);
-                MapList.call(cg.players, ClientPlayer.simuai1f);
                 cg.simuFrame++;
             }
 
@@ -243,7 +244,6 @@ var ClientPlayer = {
             //ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.sync.pos.x, 1, fireInfo.speed);
             ClientUnit.fire(unit, fireInfo.bulletId, fireInfo.speed);
             //bulletUnit.sync.fireInfo = {
-            //bulletUnit.sync.target.set(58, 1, 0);
         }
 
     },
@@ -289,14 +289,8 @@ var ClientPlayer = {
     sync1f: function (cp) {
         MapList.call(cp.units, ClientUnit.sync1f);
     },
-    syncai1f: function (cp) {
-        MapList.call(cp.units, ClientUnit.syncai1f);
-    },
     simu1f: function (cp) {
         MapList.call(cp.units, ClientUnit.simu1f);
-    },
-    simuai1f: function (cp) {
-        MapList.call(cp.units, ClientUnit.simuai1f);
     },
     show1f: function (cp, cpAlpha) {
         MapList.call(cp.units, ClientUnit.show1f, cpAlpha);
@@ -330,8 +324,9 @@ var ClientUnit = {
         };
     },
     setSyncInfo: function(cu, syncInfo) {
-        if (syncInfo.target) {
-            cu.sync.target = syncInfo.target;
+        if (syncInfo.status) {
+            console.log(syncInfo.status);
+            cu.sync.status = syncInfo.status;
         }
         if (syncInfo.speed) {
             cu.sync.speed = syncInfo.speed;
@@ -345,7 +340,8 @@ var ClientUnit = {
             sprite: util.newPlane(util.gridX(x), util.gridY(y), 20, 20, player.color),
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
-                target: new THREE.Vector3(x, y, 0),
+                direction: new THREE.Vector3(1, 0, 0),
+                status: "idle",
                 speed: speed,
             },
             simu: {
@@ -362,41 +358,37 @@ var ClientUnit = {
     },
 
     sync1f: function (cu) {
-        cu.sync.pos = util.move(cu.sync.pos,
-                cu.sync.target, cu.sync.speed, config.frameInterval);
-        cu.simu.pos.copy(cu.sync.pos);
-    },
-
-    simu1f: function (cu) {
-        var oldSimuPos = cu.simu.pos.clone();
-        cu.simu.pos = util.move(cu.simu.pos,
-                cu.sync.target, cu.sync.speed, config.frameInterval);
-        cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
-    },
-
-    syncai1f: function (cu) {
-        if (cu.player.game.simuFrame % 2 != 0) {
-            //return;
+        if (cu.sync.status == "move") {
+            cu.sync.pos = util.move(cu.sync.pos,
+                    cu.sync.direction, cu.sync.speed, config.frameInterval);
+            cu.simu.pos.copy(cu.sync.pos);
         }
-        //syncai
-        if (cu.fireInfo) {
-            if (cu.player.game.syncFrame >= cu.fireInfo.fireFrame) {
-                var unit = ClientPlayer.addUnit(cu.player,
-                    cu.fireInfo.id,
-                    cu.sync.pos.x,
-                    1,
-                    cu.fireInfo.speed);
-                unit.sync.target.set(58, 1, 0);
-                cu.fireInfo = undefined;
+        if (cu.player.game.syncFrame % 1 == 0) {
+            if (cu.fireInfo) {
+                if (cu.player.game.syncFrame >= cu.fireInfo.fireFrame) {
+                    var unit = ClientPlayer.addUnit(cu.player,
+                        cu.fireInfo.id,
+                        cu.sync.pos.x,
+                        1,
+                        cu.fireInfo.speed);
+                    unit.sync.status = "move";
+                    unit.sync.direction.copy(cu.sync.direction);
+                    cu.fireInfo = undefined;
+                }
             }
         }
     },
 
-    simuai1f: function (cu) {
-        if (cu.player.game.simuFrame % 2 != 0) {
-            //return;
+    simu1f: function (cu) {
+        if (cu.sync.status == "move") {
+            var oldSimuPos = cu.simu.pos.clone();
+            cu.simu.pos = util.move(cu.simu.pos,
+                    cu.sync.direction, cu.sync.speed, config.frameInterval);
+            cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
         }
-        //simuai
+        if (cu.player.game.simuFrame % 1 == 0) {
+            //simuai
+        }
     },
 
     setCompensate: function (cu) {

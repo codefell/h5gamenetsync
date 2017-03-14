@@ -80,6 +80,7 @@ var Server = {
         }
     },
     onOp: function (server, conn, msg) {
+        console.log(msg);
         server.syncInfo.push({
             playerId: conn.id,
             unitsInfo: msg.unitsInfo,
@@ -138,7 +139,6 @@ var Server = {
 
         for (var i = 0; i < deltaFrame; i++) {
             MapList.call(server.players, ServerPlayer.sync1f);
-            MapList.call(server.players, ServerPlayer.syncai1f);
             if (server.syncSeq.length > 0) {
                 if (server.syncFrame == server.syncSeq[0].frameIndex) {
                     var syncInfo = server.syncSeq[0].syncInfo;
@@ -212,9 +212,6 @@ var ServerPlayer = {
     sync1f: function (sp) {
         MapList.call(sp.units, ServerUnit.sync1f);
     },
-    syncai1f: function (sp) {
-        MapList.call(sp.units, ServerUnit.syncai1f);
-    },
 };
 
 var ServerUnit = {
@@ -222,7 +219,8 @@ var ServerUnit = {
         return {
             id: id,
             pos: new THREE.Vector3(x, y, 0),
-            target: new THREE.Vector3(x, y, 0),
+            direction: new THREE.Vector3(1, 0, 0),
+            status: "idle",
             speed: speed,
             player: player
         };
@@ -243,32 +241,31 @@ var ServerUnit = {
         };
     },
     setSyncInfo: function (su, unitInfo) {
-        if (unitInfo.target) {
-            su.target = unitInfo.target;
+        if (unitInfo.status) {
+            su.status = unitInfo.status;
         }
         if (unitInfo.speed) {
             su.speed = unitInfo.speed;
         }
     },
     sync1f: function (su) {
-        var oldPos = su.pos.clone();
-        su.pos = util.move(su.pos,
-            su.target, su.speed, config.frameInterval);
-    },
-    syncai1f: function (su) {
-        if (Server.getInst() % 2 != 0) {
-            //return;
+        if (su.status == "move") {
+            var oldPos = su.pos.clone();
+            su.pos = util.move(su.pos,
+                su.direction, su.speed, config.frameInterval);
         }
-        //syncai
-        if (su.fireInfo) {
-            if (Server.getInst().syncFrame >= su.fireInfo.fireFrame) {
-                var unit = ServerPlayer.addUnit(su.player,
-                    su.fireInfo.id,
-                    su.pos.x,
-                    1,
-                    su.fireInfo.speed);
-                unit.target.set(58, 1, 0);
-                su.fireInfo = undefined;
+        if (Server.getInst().syncFrame % 1 == 0) {
+            if (su.fireInfo) {
+                if (Server.getInst().syncFrame >= su.fireInfo.fireFrame) {
+                    var unit = ServerPlayer.addUnit(su.player,
+                        su.fireInfo.id,
+                        su.pos.x,
+                        1,
+                        su.fireInfo.speed);
+                    unit.direction.copy(su.direction);
+                    unit.status = "move";
+                    su.fireInfo = undefined;
+                }
             }
         }
     },

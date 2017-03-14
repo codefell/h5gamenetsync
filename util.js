@@ -16,15 +16,10 @@ var util = {
 
         return plane;
     },
-    move: function (pos0, pos1, speed, time) {
-        var v = pos1.clone().sub(pos0);
+    move: function (pos, direction, speed, time) {
         var dis = speed * time;
-        var vlen = v.length();
-        if (dis > vlen) {
-            dis = vlen;
-        }
-        v.normalize().multiplyScalar(dis);
-        return v.add(pos0);
+        pos = direction.clone().normalize().multiplyScalar(dis).add(pos);
+        return pos;
     },
     array: {
         add: function (arr, e) {
