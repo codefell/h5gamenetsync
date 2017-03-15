@@ -1,6 +1,7 @@
 $(function () {
 
     $("#action").click(function () {
+        Client.opTest(client0);
         Client.opTest(client1);
     });
     $("#next").click(function () {
@@ -47,9 +48,9 @@ $(function () {
 
     Client.addLocalUnits(client1, [
         {
-            x: 0,
-            y: -1,
-            speed: 30,
+            x: 59,
+            y: 0,
+            speed: -30,
         },
         /*
         {

@@ -338,7 +338,11 @@ var ClientUnit = {
             color: player.color,
             player: player,
             //sprite: util.newPlane(util.gridX(x), util.gridY(y), 20, 20, player.color),
-            sprite: Sprite.create(util.gridX(x), util.gridY(y), 50, 50, "snake", [{name: "idle", num: 6, loop: true}]),
+            sprite: Sprite.create(util.gridX(x), util.gridY(y), 50, 50, "snake",
+                [{name: "idle", num: 6, loop: true},
+                 {name: "walk", num: 6, loop: true},
+                 {name: "attack", num: 9, loop: true}],
+                 (speed < 0)),
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
                 direction: new THREE.Vector3(1, 0, 0),

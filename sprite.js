@@ -1,18 +1,42 @@
 var Sprite = {
-    create: function (x, y, w, h, name, aniInfoList) {
+    rightUvs: [[
+        [{x: 0, y: 1}, {x: 0, y: 0}, {x: 1, y: 1}],
+        [{x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}],
+    ]],
+    leftUvs: [[
+        [{x: 1, y: 1}, {x: 1, y: 0}, {x: 0, y: 1}],
+        [{x: 1, y: 0}, {x: 0, y: 0}, {x: 0, y: 1}],
+    ]],
+    setBlood: function (sprite, blood) {
+        sprite.bloodbar.scale.x = blood;
+    },
+    create: function (x, y, w, h, name, aniInfoList, left) {
         var planeGeometry = new THREE.PlaneGeometry(w, h);
         var planeMaterial = new THREE.MeshBasicMaterial({
             transparent: true,
         });
+        var bloodbarbg = util.newPlane(0, -40, 0, 60, 10, 0x0000ff);
+        var bloodbar = util.newPlane(0, 0, 1, 56, 6, 0xff0000);
+        bloodbarbg.add(bloodbar);
         var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        if (left) {
+            planeGeometry.faceVertexUvs = Sprite.leftUvs;
+        }
+        else {
+            planeGeometry.faceVertexUvs = Sprite.rightUvs;
+        }
+        plane.add(bloodbarbg);
+        bloodbar.scale.x = 0.5;
+        planeGeometry.uvsNeedUpdate = true;
         plane.position.x = x;
         plane.position.y = y;
         plane.position.z = 0;
         var sprite = {
+            bloodbar: bloodbar,
             plane: plane,
             name: name,
             aniList: {},
-            currAniName: "idle",
+            currAniName: "attack",
         };
         for (var i in aniInfoList) {
             var aniInfo = aniInfoList[i];
