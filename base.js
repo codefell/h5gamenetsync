@@ -5,6 +5,17 @@ var MapList = {
             map: {}
         };
     },
+    sortOnId: function (ml) {
+        ml.list.sort(function (a, b) {
+            if (a.id < b.id) {
+                return -1;
+            }
+            if (a.id == b.id) {
+                return 0;
+            }
+            return 1;
+        });
+    },
     add: function (ml, e) {
         for (var i in ml.list) {
             if (ml.list[i] == undefined) {

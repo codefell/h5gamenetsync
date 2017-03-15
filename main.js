@@ -11,8 +11,8 @@ $(function () {
     $(document).keydown(function (e) {
         var key = String.fromCharCode(e.which);
         if (key == "I") {
-            console.log(client0.game.players.list[0].units.list[0]);
-            //console.log(client1.game.players.list[0].units.list);
+            console.log(client0.game.players.list);
+            console.log(client1.game.players.list);
         }
         else if (key == "E") {
             Server.eval(Server.getInst());
