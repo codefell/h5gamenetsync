@@ -71,7 +71,7 @@ var Server = {
                 });
             }
         }
-        if (readyNum == 2) {
+        if (readyNum == 1) {
             server.start = true; 
             server.startTime = UpdateHandles.time;
             Server.sendMsg(server, {
@@ -80,7 +80,6 @@ var Server = {
         }
     },
     onOp: function (server, conn, msg) {
-        console.log(msg);
         server.syncInfo.push({
             playerId: conn.id,
             unitsInfo: msg.unitsInfo,
@@ -123,11 +122,15 @@ var Server = {
             syncInfo: server.syncInfo,
         });
 
+        var si = server.syncInfo;
+        console.log("server send msg", frameNum, JSON.stringify(server.syncInfo));
+
         if (server.syncInfo.length > 0) {
             server.syncSeq.push({frameIndex: frameNum, syncInfo: server.syncInfo});
             server.syncInfo = [];
         }
         //server.syncFrame = frameNum;
+        Server.eval(server);
     },
     eval: function (server) {
         var frameNum = Math.floor(
@@ -135,12 +138,18 @@ var Server = {
                 / config.frameInterval);
 
         var deltaFrame = frameNum - server.syncFrame;
-        console.log("server eval", deltaFrame, frameNum, server.syncFrame);
+        console.log("server eval", server.syncFrame, "->", frameNum);
 
         for (var i = 0; i < deltaFrame; i++) {
             MapList.call(server.players, ServerPlayer.sync1f);
+            server.syncFrame++;
             if (server.syncSeq.length > 0) {
+                console.log("server set player info at", server.syncFrame, JSON.stringify(server.syncSeq[0]));
+
+
                 if (server.syncFrame == server.syncSeq[0].frameIndex) {
+
+
                     var syncInfo = server.syncSeq[0].syncInfo;
                     for (var j in syncInfo){
                         var playerSyncInfo = syncInfo[j];
@@ -150,9 +159,10 @@ var Server = {
                     server.syncSeq.shift();
                 }
             }
-            server.syncFrame++;
         }
-        console.log("server eval after", server.syncFrame);
+        if (server.start) {
+            console.log("server", JSON.stringify(server.players.list[0].units.list[0].pos));
+        }
     },
 };
 

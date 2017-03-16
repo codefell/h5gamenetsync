@@ -109,7 +109,9 @@ var Client = {
         ClientGame.start(client.game);
     },
     onSync: function (client, msg) {
-        console.log("onSync", client.divId, msg);
+        if (msg.syncInfo.length > 0) {
+            console.log("client onsync", msg.frameIndex, JSON.stringify(msg.syncInfo));
+        }
         ClientGame.sync(client.game, msg.frameIndex,
             msg.syncInfo);
     },
@@ -202,9 +204,13 @@ var ClientGame = {
         if (cg.syncInfo.length > 0) {
             for (var i in cg.syncInfo) {
                 var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
+                console.log("client", cg.syncFrame, "->", cg.syncInfo[i].syncFrame, JSON.stringify(cg.syncInfo[i].allPlayerSyncInfo));
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
                     cg.syncFrame++;
+                }
+                if (cg.syncInfo[i].allPlayerSyncInfo.length > 0) {
+                    console.log("client set player info at", cg.syncFrame);
                 }
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
                     var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
@@ -217,9 +223,8 @@ var ClientGame = {
             cg.simuFrame = cg.syncFrame;
             var deltaSimuFrame = currFrame - cg.syncFrame;
             deltaSimuFrame = Math.min(deltaSimuFrame, 6);
-            console.log("sc in", cg.playerId, cg.syncInfo);
             for (var i = 0; i < deltaSimuFrame; i++) {
-                MapList.call(cg.players, ClientPlayer.simu1f);
+                MapList.call(cg.players, ClientPlayer.simu1f, false);
                 ClientGame.simuCollide(cg);
                 cg.simuFrame++;
             }
@@ -229,8 +234,8 @@ var ClientGame = {
             cg.showCpLast = currFrame;
             cg.syncInfo = [];
 
-            MapList.call(cg.players, ClientPlayer.show1f, 1 / 6);
-            cg.showCpLast++;
+            MapList.call(cg.players, ClientPlayer.show1f, 0);
+            //cg.showCpLast++;
         }
         else {
             var deltaSimuFrame = currFrame - cg.simuFrame;
@@ -242,14 +247,15 @@ var ClientGame = {
                     cg.showCpLast++;
                 }
                 //which should be evaled first, pos or ai
-                MapList.call(cg.players, ClientPlayer.simu1f);
-                console.log("sc out", cg.playerId, cg.syncInfo.length);
+                MapList.call(cg.players, ClientPlayer.simu1f, true);
                 ClientGame.simuCollide(cg);
                 MapList.call(cg.players, ClientPlayer.show1f, cpAlpha);
                 cg.simuFrame++;
             }
         }
         MapList.call(cg.players, ClientPlayer.update);
+        var unit = cg.players.list[0].units.list[0];
+        console.log("client sync", JSON.stringify(unit.sync.pos), "simu", JSON.stringify(unit.simu.pos), "show", JSON.stringify(unit.show.pos));
     },
 };
 
@@ -326,8 +332,8 @@ var ClientPlayer = {
     sync1f: function (cp) {
         MapList.call(cp.units, ClientUnit.sync1f);
     },
-    simu1f: function (cp) {
-        MapList.call(cp.units, ClientUnit.simu1f);
+    simu1f: function (cp, recordLastTranslate) {
+        MapList.call(cp.units, ClientUnit.simu1f, recordLastTranslate);
     },
     show1f: function (cp, cpAlpha) {
         MapList.call(cp.units, ClientUnit.show1f, cpAlpha);
@@ -362,7 +368,6 @@ var ClientUnit = {
     },
     setSyncInfo: function(cu, syncInfo) {
         if (syncInfo.status) {
-            console.log(syncInfo.status);
             cu.sync.status = syncInfo.status;
         }
         if (syncInfo.speed) {
@@ -375,7 +380,7 @@ var ClientUnit = {
             color: player.color,
             player: player,
             //sprite: util.newPlane(util.gridX(x), util.gridY(y), 20, 20, player.color),
-            sprite: Sprite.create(util.gridX(x), util.gridY(y), 50, 50, "snake",
+            sprite: Sprite.create(util.gridX(x), util.gridY(y), 20, 20, "snake",
                 [{name: "idle", num: 6, loop: true},
                  {name: "walk", num: 6, loop: true},
                  {name: "attack", num: 9, loop: true}],
@@ -421,12 +426,14 @@ var ClientUnit = {
         }
     },
 
-    simu1f: function (cu) {
+    simu1f: function (cu, recordLastTranslate) {
         if (cu.sync.status == "move") {
             var oldSimuPos = cu.simu.pos.clone();
             cu.simu.pos = util.move(cu.simu.pos,
                     cu.sync.direction, cu.sync.speed, config.frameInterval);
-            cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
+            //if (recordLastTranslate) {
+                cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
+            //}
         }
         if (cu.player.game.simuFrame % 1 == 0) {
             //simuai
@@ -444,10 +451,10 @@ var ClientUnit = {
         cu.simu.lastSimuTranslate.set(0, 0, 0);
         var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
         cu.show.pos.add(cpPos)
+        console.log("show1f", cu.id, JSON.stringify(cu.show.pos));
     },
 
     onSimuCollide: function (cu, collider) {
-        console.log("collision", cu.player.id, collider.player.id);
     },
 
     update: function (cu) {
