@@ -34,12 +34,15 @@ var Client = {
             Client.currOpClient = client;
             x = -(client.width/2 - x);
             y = client.height/2 - y;
+            var unit = MapList.get(client.game.players, client.divId).units.list[0];
+            var dir = new THREE.Vector3(x, y, 0);
+            dir.sub(unit.sync.pos).normalize();
             client.conn.clientSend({
                 type: "op",
                 unitsInfo: [
                     {
-                        id: client.game.players.list[0].units.list[0].id,
-                        target: new THREE.Vector3(x, y, 0),
+                        id: unit.id,
+                        direction: {x: dir.x, y: dir.y},
                     },
                 ],
             });
@@ -372,6 +375,10 @@ var ClientUnit = {
         };
     },
     setSyncInfo: function(cu, syncInfo) {
+        if (syncInfo.direction) {
+            cu.sync.direction.x = syncInfo.direction.x;
+            cu.sync.direction.y = syncInfo.direction.y;
+        }
         if (syncInfo.status) {
             cu.sync.status = syncInfo.status;
         }

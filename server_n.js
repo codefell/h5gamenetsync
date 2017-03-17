@@ -244,6 +244,10 @@ var ServerUnit = {
         };
     },
     setSyncInfo: function (su, unitInfo) {
+        if (unitInfo.direction) {
+            su.direction.x = unitInfo.direction.x;
+            su.direction.y = unitInfo.direction.y;
+        }
         if (unitInfo.status) {
             su.status = unitInfo.status;
         }
