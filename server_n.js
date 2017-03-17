@@ -71,7 +71,7 @@ var Server = {
                 });
             }
         }
-        if (readyNum == 1) {
+        if (readyNum == 2) {
             server.start = true; 
             server.startTime = UpdateHandles.time;
             Server.sendMsg(server, {
@@ -161,7 +161,6 @@ var Server = {
             }
         }
         if (server.start) {
-            console.log("server", JSON.stringify(server.players.list[0].units.list[0].pos));
         }
     },
 };
@@ -203,8 +202,8 @@ var ServerPlayer = {
             ServerUnit.fire(unit, fireInfo.bulletId, fireInfo.speed);
         }
     },
-    addUnit: function (sp, id, x, y, speed) {
-        var unit = ServerUnit.create(id, x, y, speed, sp);
+    addUnit: function (sp, id, x, y, dx, dy, speed) {
+        var unit = ServerUnit.create(id, x, y, dx, dy, speed, sp);
         MapList.add(sp.units, unit);
         return unit;
     },
@@ -215,6 +214,8 @@ var ServerPlayer = {
             var unit = ServerUnit.create(unitInfo.id,
                 unitInfo.x,
                 unitInfo.y,
+                unitInfo.dx,
+                unitInfo.dy,
                 unitInfo.speed, sp);
             MapList.add(sp.units, unit);
         }
@@ -225,11 +226,11 @@ var ServerPlayer = {
 };
 
 var ServerUnit = {
-    create: function (id, x, y, speed, player) {
+    create: function (id, x, y, dx, dy, speed, player) {
         return {
             id: id,
             pos: new THREE.Vector3(x, y, 0),
-            direction: new THREE.Vector3(1, 0, 0),
+            direction: new THREE.Vector3(dx, dy, 0),
             status: "idle",
             speed: speed,
             player: player
@@ -240,6 +241,8 @@ var ServerUnit = {
             id: su.id,
             x: su.pos.x,
             y: su.pos.y,
+            dx: su.direction.x,
+            dy: su.direction.y,
             speed: su.speed,
         };
     },
@@ -261,6 +264,10 @@ var ServerUnit = {
     sync1f: function (su) {
         if (su.status == "move") {
             var oldPos = su.pos.clone();
+            console.log("server ->",
+                JSON.stringify(su.pos),
+                JSON.stringify(su.direction),
+                JSON.stringify(su.speed));
             su.pos = util.move(su.pos,
                 su.direction, su.speed, config.frameInterval);
         }
@@ -271,8 +278,9 @@ var ServerUnit = {
                         su.fireInfo.id,
                         su.pos.x,
                         1,
+                        su.direction.x,
+                        su.direction.y,
                         su.fireInfo.speed);
-                    unit.direction.copy(su.direction);
                     unit.status = "move";
                     su.fireInfo = undefined;
                 }

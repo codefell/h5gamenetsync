@@ -36,6 +36,8 @@ var Client = {
             ClientGame.addLocalUnit(client.game,
                 unitsInfo[i].x,
                 unitsInfo[i].y,
+                unitsInfo[i].dx,
+                unitsInfo[i].dy,
                 unitsInfo[i].speed,
                 client.color);
         }
@@ -157,9 +159,9 @@ var ClientGame = {
         return ClientGame.getPlayer(cg, cg.playerId);
     },
 
-    addLocalUnit: function (cg, x, y, speed) {
+    addLocalUnit: function (cg, x, y, dx, dy, speed) {
         var player = ClientGame.getLocalPlayer(cg);
-        ClientPlayer.addUnit(player, 0, x, y, speed, player);
+        ClientPlayer.addUnit(player, 0, x, y, dx, dy, speed, player);
     },
 
     addPlayer: function (cg, playerId, color) {
@@ -312,6 +314,8 @@ var ClientPlayer = {
                 unit.id,
                 unit.x,
                 unit.y,
+                unit.dx,
+                unit.dy,
                 unit.speed);
         }
     },
@@ -322,14 +326,16 @@ var ClientPlayer = {
                 unitInfo.id,
                 unitInfo.x,
                 unitInfo.y,
+                unitInfo.dx,
+                unitInfo.dy,
                 unitInfo.speed);
         }
     },
-    addUnit: function (cp, id, x, y, speed) {
+    addUnit: function (cp, id, x, y, dx, dy, speed) {
         if (id == 0) {
             id = ClientUnit.nextId();
         }
-        var unit = ClientUnit.create(id, x, y, speed, cp);
+        var unit = ClientUnit.create(id, x, y, dx, dy, speed, cp);
         MapList.add(cp.units, unit);
         return unit;
     },
@@ -360,6 +366,8 @@ var ClientUnit = {
             id: cu.id,
             x: cu.sync.pos.x,
             y: cu.sync.pos.y,
+            dx: cu.sync.direction.x,
+            dy: cu.sync.direction.y,
             speed: cu.sync.speed,
         };
     },
@@ -378,7 +386,7 @@ var ClientUnit = {
             cu.sync.speed = syncInfo.speed;
         }
     },
-    create: function (id, x, y, speed, player) {
+    create: function (id, x, y, dx, dy, speed, player) {
         var unit = {
             id: id,
             color: player.color,
@@ -388,10 +396,10 @@ var ClientUnit = {
                 [{name: "idle", num: 6, loop: true},
                  {name: "walk", num: 6, loop: true},
                  {name: "attack", num: 9, loop: true}],
-                 (speed < 0)),
+                 dx < 0),
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
-                direction: new THREE.Vector3(1, 0, 0),
+                direction: new THREE.Vector3(dx, dy, 0),
                 status: "idle",
                 speed: speed,
             },
@@ -422,9 +430,10 @@ var ClientUnit = {
                         cu.fireInfo.id,
                         cu.sync.pos.x,
                         1,
+                        cu.sync.direction.x,
+                        cu.sync.direction.y,
                         cu.fireInfo.speed);
                     unit.sync.status = "move";
-                    unit.sync.direction.copy(cu.sync.direction);
                     cu.fireInfo = undefined;
                 }
             }
