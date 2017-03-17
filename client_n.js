@@ -9,14 +9,13 @@ var Client = {
             width: je.width(),
             height: je.height(),
         };
-        client.sceneInfo.scene.add(util.newPlane(0, 0, 10, 10, 0x0000ff));
         client.game = ClientGame.create(divId, color, client),
         Client.allClient[divId] = client;
 
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
-        var conn = new Connection(divId, 0.1, 0,
+        var conn = new Connection(divId, 0, 0,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
                 return function (msg) {
@@ -26,7 +25,6 @@ var Client = {
 
         client.conn = conn;
         client.updateHandle = updateHandle;
-        Client.currOpClient = client;
 
         $('#'+divId).click(function (e) {
             var rect0 = $(this)[0].getBoundingClientRect();
@@ -46,6 +44,7 @@ var Client = {
                 ],
             });
         });
+
         return client;
     },
     addLocalUnits: function (client, unitsInfo) {
@@ -53,37 +52,52 @@ var Client = {
             ClientGame.addLocalUnit(client.game,
                 unitsInfo[i].x,
                 unitsInfo[i].y,
+                unitsInfo[i].dx,
+                unitsInfo[i].dy,
                 unitsInfo[i].speed,
                 client.color);
         }
     },
-    opTestSpeed: function (client) {
+    opFire: function (client) {
         var unit = client.game.players.list[0].units.list[0];
-        var speed = unit.sync.speed;
-        if (speed >= 50) {
-            speed /= 2;
-        }
-        else {
-            speed *= 2;
+        client.conn.clientSend({
+            type: "op",
+            firesInfo: [
+                {
+                    id: unit.id,
+                    bulletId: ClientUnit.nextId(),
+                    speed: 50,
+                },
+            ],
+        });
+    },
+    opTest1: function (client) {
+        var player = MapList.get(client.game.players, client.divId);
+        var unit = player.units.list[0];
+        var unit = client.game.players.list[0].units.list[0];
+        client.conn.clientSend({
+            type: "op",
+            unitsInfo: [
+                {
+                    id: unit.id,
+                    speed: 70,
+                },
+            ],
+        });
+    },
+    opTest: function (client) {
+        var player = MapList.get(client.game.players, client.divId);
+        var unit = player.units.list[0];
+        var status = "move";
+        if (unit.sync.status == "move") {
+            status = "idle";
         }
         client.conn.clientSend({
             type: "op",
             unitsInfo: [
                 {
                     id: unit.id,
-                    speed: speed,
-                },
-            ],
-        });
-    },
-    opTest: function (client) {
-        client.sceneInfo.scene.add(util.newPlane(180, 180, 10, 10, 0x0000ff));
-        client.conn.clientSend({
-            type: "op",
-            unitsInfo: [
-                {
-                    id: client.game.players.list[0].units.list[0].id,
-                    target: new THREE.Vector3(180, 180, 0),
+                    status: status,
                 },
             ],
         })
@@ -114,7 +128,7 @@ var Client = {
     },
     onSync: function (client, msg) {
         ClientGame.sync(client.game, msg.frameIndex,
-            msg.syncState);
+            msg.syncInfo);
     },
 
     recvHandler: function (client, msg) {
@@ -134,8 +148,6 @@ var ClientGame = {
             syncFrame: 0,
             simuFrame: 0,
             startTime: UpdateHandles.time,
-            showCpStart: 0,
-            showCpLast: 0,
             playerId: playerId,
             players: MapList.create(),
             syncInfo: [],
@@ -147,6 +159,7 @@ var ClientGame = {
     start: function (cg) {
         cg.start = true;
         cg.startTime = UpdateHandles.time;
+        MapList.sortOnId(cg.players);
     },
 
     getPlayer: function (cg, playerId) {
@@ -157,9 +170,9 @@ var ClientGame = {
         return ClientGame.getPlayer(cg, cg.playerId);
     },
 
-    addLocalUnit: function (cg, x, y, speed) {
+    addLocalUnit: function (cg, x, y, dx, dy, speed) {
         var player = ClientGame.getLocalPlayer(cg);
-        ClientPlayer.addUnit(player, 0, x, y, speed, player);
+        ClientPlayer.addUnit(player, 0, x, y, dx, dy, speed, player);
     },
 
     addPlayer: function (cg, playerId, color) {
@@ -174,40 +187,74 @@ var ClientGame = {
         });
     },
 
+    syncCollide: function (cg) {
+
+    },
+
+    simuCollide: function (cg) {
+        var units = [];
+        MapList.call(cg.players, function (player) {
+            MapList.call(player.units, function (unit) {
+                units.push(unit);
+            });
+        });
+        for (var i = 0; i < units.length - 1; i++) {
+            for (var j = i+1; j < units.length; j++) {
+                var u0 = units[i];
+                var u1 = units[j];
+                if (Math.abs(u0.simu.pos.x - u1.simu.pos.x) < 4) {
+                    ClientUnit.onSimuCollide(u0, u1);
+                    ClientUnit.onSimuCollide(u1, u0);
+                }
+            }
+        }
+    },
+
     update: function (cg) {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
-        var deltaSimuFrame = currFrame - cg.simuFrame;
-        var cpHead = Math.min(
-                cg.showCpStart + 6,
-                currFrame);
-        var cpAlpha = (cpHead - cg.showCpLast) / 6;
-        cg.showCpLast = cpHead;
-        MapList.call(cg.players, ClientPlayer.simuShow, deltaSimuFrame, cpAlpha);
-        cg.simuFrame = currFrame;
 
         if (cg.syncInfo.length > 0) {
             for (var i in cg.syncInfo) {
                 var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
-                MapList.call(cg.players, ClientPlayer.sync, deltaSyncFrame);
-                cg.syncFrame = cg.syncInfo[i].syncFrame;
+                for (var j = 0; j < deltaSyncFrame; j++) {
+                    MapList.call(cg.players, ClientPlayer.sync1f);
+                    cg.syncFrame++;
+                }
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
                     var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
                     var player = MapList.get(cg.players, playerSyncInfo.playerId);
-                    ClientPlayer.setSyncInfo(player, playerSyncInfo.units);
+                    ClientPlayer.setSyncInfo(player, playerSyncInfo);
                 }
             }
             //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
             //wait for new syncinfo
+            cg.simuFrame = cg.syncFrame;
             var deltaSimuFrame = currFrame - cg.syncFrame;
-            MapList.call(cg.players, ClientPlayer.simu, deltaSimuFrame);
-            cg.simuFrame = currFrame;
+            deltaSimuFrame = Math.min(deltaSimuFrame, 6);
+            for (var i = 0; i < deltaSimuFrame; i++) {
+                MapList.call(cg.players, ClientPlayer.simu1f);
+                ClientGame.simuCollide(cg);
+                cg.simuFrame++;
+            }
+
+            MapList.call(cg.players, ClientPlayer.show1f, 0);
             MapList.call(cg.players, ClientPlayer.setCompensate);
-            cg.showCpStart = currFrame;
-            cg.showCpLast = currFrame;
             cg.syncInfo = [];
         }
+        else {
+            var deltaSimuFrame = currFrame - cg.simuFrame;
+            deltaSimuFrame = Math.min(deltaSimuFrame, 6);
+            for (var i = 0; i < deltaSimuFrame; i++) {
+                //which should be evaled first, pos or ai
+                MapList.call(cg.players, ClientPlayer.simu1f);
+                ClientGame.simuCollide(cg);
+                MapList.call(cg.players, ClientPlayer.show1f);
+                cg.simuFrame++;
+            }
+        }
         MapList.call(cg.players, ClientPlayer.update);
+        var unit = cg.players.list[0].units.list[0];
     },
 };
 
@@ -224,12 +271,23 @@ var ClientPlayer = {
             units: MapList.create(),
         };
     },
-    setSyncInfo: function (cp, syncState) {
-        for (var i in syncState) {
-            var unitSyncState = syncState[i];
-            var unit = MapList.get(cp.units, unitSyncState.id);
-            ClientUnit.setSyncInfo(unit, unitSyncState);
+    setSyncInfo: function (cp, syncInfo) {
+        var unitsInfo = syncInfo.unitsInfo || [];
+        for (var i in unitsInfo) {
+            var unitInfo = unitsInfo[i];
+            var unit = MapList.get(cp.units, unitInfo.id);
+            ClientUnit.setSyncInfo(unit, unitInfo);
         }
+
+        var firesInfo = syncInfo.firesInfo || [];
+        for (var i in firesInfo) {
+            var fireInfo = firesInfo[i];
+            var unit = MapList.get(cp.units, fireInfo.id);
+            //ClientPlayer.addUnit(cp, fireInfo.bulletId, unit.sync.pos.x, 1, fireInfo.speed);
+            ClientUnit.fire(unit, fireInfo.bulletId, fireInfo.speed);
+            //bulletUnit.sync.fireInfo = {
+        }
+
     },
     getInfo: function (cp) {
         var units = [];
@@ -249,6 +307,8 @@ var ClientPlayer = {
                 unit.id,
                 unit.x,
                 unit.y,
+                unit.dx,
+                unit.dy,
                 unit.speed);
         }
     },
@@ -259,27 +319,30 @@ var ClientPlayer = {
                 unitInfo.id,
                 unitInfo.x,
                 unitInfo.y,
+                unitInfo.dx,
+                unitInfo.dy,
                 unitInfo.speed);
         }
     },
-    addUnit: function (cp, id, x, y, speed) {
+    addUnit: function (cp, id, x, y, dx, dy, speed) {
         if (id == 0) {
             id = ClientUnit.nextId();
         }
-        MapList.add(cp.units,
-            ClientUnit.create(id, x, y, speed, cp));
+        var unit = ClientUnit.create(id, x, y, dx, dy, speed, cp);
+        MapList.add(cp.units, unit);
+        return unit;
     },
-    sync: function (cp, deltaFrame) {
-        MapList.call(cp.units, ClientUnit.sync, deltaFrame);
+    sync1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.sync1f);
     },
-    simu: function (cp, deltaFrame) {
-        MapList.call(cp.units, ClientUnit.simu, deltaFrame);
+    simu1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.simu1f);
+    },
+    show1f: function (cp) {
+        MapList.call(cp.units, ClientUnit.show1f);
     },
     setCompensate: function (cp) {
         MapList.call(cp.units, ClientUnit.setCompensate);
-    },
-    simuShow: function (cp, deltaFrame, cpAlpha) {
-        MapList.call(cp.units, ClientUnit.simuShow, deltaFrame, cpAlpha);
     },
     update: function (cp) {
         MapList.call(cp.units, ClientUnit.update);
@@ -296,33 +359,52 @@ var ClientUnit = {
             id: cu.id,
             x: cu.sync.pos.x,
             y: cu.sync.pos.y,
+            dx: cu.sync.direction.x,
+            dy: cu.sync.direction.y,
             speed: cu.sync.speed,
         };
     },
-    setSyncInfo: function(cu, syncState) {
-        if (syncState.target) {
-            cu.sync.target = syncState.target;
+    fire: function (cu, id, speed) {
+        cu.fireInfo = {
+            id: id,
+            speed: speed,
+            fireFrame: cu.player.game.syncFrame + 6,
+        };
+    },
+    setSyncInfo: function(cu, syncInfo) {
+        if (syncInfo.status) {
+            cu.sync.status = syncInfo.status;
         }
-        if (syncState.speed) {
-            cu.sync.speed = syncState.speed;
+        if (syncInfo.speed) {
+            cu.sync.speed = syncInfo.speed;
         }
     },
-    create: function (id, x, y, speed, player) {
+    create: function (id, x, y, dx, dy, speed, player) {
         var unit = {
             id: id,
             color: player.color,
             player: player,
             sprite: util.newPlane(x, y, 20, 20, player.color),
+            /*
+            sprite: Sprite.create(util.gridX(x), util.gridY(y), 20, 20, "snake",
+                [{name: "idle", num: 6, loop: true},
+                 {name: "walk", num: 6, loop: true},
+                 {name: "attack", num: 9, loop: true}],
+                 dx < 0),
+            */
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
-                target: new THREE.Vector3(x, y, 0),
+                direction: new THREE.Vector3(dx, dy, 0),
+                status: "move",
                 speed: speed,
             },
             simu: {
                 pos: new THREE.Vector3(x, y, 0),
+                lastSimuTranslate: new THREE.Vector3(),
             },
             show: {
                 pos: new THREE.Vector3(x, y, 0),
+                speed: speed,
                 cpPos: new THREE.Vector3(),
             },
         };
@@ -330,32 +412,62 @@ var ClientUnit = {
         return unit;
     },
 
-    sync: function (cu, deltaFrame) {
-        cu.sync.pos = util.move(cu.sync.pos,
-                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
-        cu.simu.pos.copy(cu.sync.pos);
+    sync1f: function (cu) {
+        if (cu.sync.status == "move") {
+            cu.sync.pos = util.move(cu.sync.pos,
+                    cu.sync.direction, cu.sync.speed, config.frameInterval);
+            cu.simu.pos.copy(cu.sync.pos);
+        }
+        if (cu.player.game.syncFrame % 1 == 0) {
+            if (cu.fireInfo) {
+                if (cu.player.game.syncFrame >= cu.fireInfo.fireFrame) {
+                    var unit = ClientPlayer.addUnit(cu.player,
+                        cu.fireInfo.id,
+                        cu.sync.pos.x,
+                        cu.sync.pos.y,
+                        cu.sync.direction.x,
+                        cu.sync.direction.y,
+                        cu.fireInfo.speed);
+                    unit.sync.status = "move";
+                    cu.fireInfo = undefined;
+                }
+            }
+        }
+    },
+
+    simu1f: function (cu) {
+        if (cu.sync.status == "move") {
+            var oldSimuPos = cu.simu.pos.clone();
+            cu.simu.pos = util.move(cu.simu.pos,
+                    cu.sync.direction, cu.sync.speed, config.frameInterval);
+        }
+        if (cu.player.game.simuFrame % 1 == 0) {
+            //simuai
+        }
     },
 
     setCompensate: function (cu) {
-        cu.show.cpPos.copy(cu.simu.pos).sub(cu.show.pos);
+        var difpos = cu.simu.pos.clone().sub(cu.show.pos).length();
+        cu.show.speed = cu.sync.speed + Math.sign(cu.sync.speed) * difpos * 10;
     },
 
-    simu: function (cu, deltaFrame) {
-        var oldSimuPos = cu.simu.pos.clone();
-        cu.simu.pos = util.move(cu.simu.pos,
-                cu.sync.target, cu.sync.speed, deltaFrame * config.frameInterval);
-        return cu.simu.pos.clone().sub(oldSimuPos);
+    show1f: function (cu) {
+        if (cu.sync.status == "move") {
+            var ret = util.moveTo(cu.show.pos, cu.simu.pos, cu.show.speed, config.frameInterval);
+            cu.show.pos = ret[0];
+            var reach = ret[1];
+            if (reach) {
+                cu.show.speed = cu.sync.speed;
+            }
+        }
     },
 
-    simuShow: function (cu, deltaFrame, cpAlpha) {
-        var deltaSimuPos = ClientUnit.simu(cu, deltaFrame);
-        cu.show.pos.add(deltaSimuPos);
-        var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
-        cu.show.pos.add(cpPos)
+    onSimuCollide: function (cu, collider) {
     },
 
-    update: function (cu, frame, simuFrame, cpAlpha) {
+    update: function (cu) {
         cu.sprite.position.x = cu.show.pos.x;
         cu.sprite.position.y = cu.show.pos.y;
+        //Sprite.update(cu.sprite);
     },
 };
