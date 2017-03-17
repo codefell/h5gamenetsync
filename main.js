@@ -29,8 +29,8 @@ $(function () {
         {
             x: 20,
             y: 20,
-            speed: 35,
-            dx: 0,
+            speed: 30,
+            dx: 1,
             dy: 1,
         },
         /*
@@ -44,9 +44,9 @@ $(function () {
 
     Client.addLocalUnits(client1, [
         {
-            x: -20,
-            y: 20,
-            speed: 35,
+            x: 20,
+            y: -20,
+            speed: 30,
             dx: 0,
             dy: 1,
         },
