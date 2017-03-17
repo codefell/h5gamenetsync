@@ -10,6 +10,12 @@ var Sprite = {
     setBlood: function (sprite, blood) {
         sprite.bloodbar.scale.x = blood;
     },
+    setAni: function (sprite, status) {
+        if (sprite.currAniName != status) {
+            sprite.currAniName = status;
+            sprite.aniList[status].frame = 0;
+        }
+    },
     create: function (x, y, w, h, name, aniInfoList, left) {
         var planeGeometry = new THREE.PlaneGeometry(w, h);
         var planeMaterial = new THREE.MeshBasicMaterial({
@@ -36,7 +42,7 @@ var Sprite = {
             plane: plane,
             name: name,
             aniList: {},
-            currAniName: "attack",
+            currAniName: "idle",
         };
         for (var i in aniInfoList) {
             var aniInfo = aniInfoList[i];

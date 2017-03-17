@@ -172,10 +172,6 @@ var ClientGame = {
     },
 
     syncCollide: function (cg) {
-
-    },
-
-    simuCollide: function (cg) {
         var units = [];
         MapList.call(cg.players, function (player) {
             MapList.call(player.units, function (unit) {
@@ -194,6 +190,9 @@ var ClientGame = {
         }
     },
 
+    simuCollide: function (cg) {
+    },
+
     update: function (cg) {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
@@ -203,6 +202,7 @@ var ClientGame = {
                 var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
+                    ClientGame.syncCollide(cg);
                     cg.syncFrame++;
                 }
                 for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
@@ -357,7 +357,7 @@ var ClientUnit = {
     },
     setSyncInfo: function(cu, syncInfo) {
         if (syncInfo.status) {
-            cu.sync.status = syncInfo.status;
+            ClientUnit.setStatus(cu, syncInfo.status);
         }
         if (syncInfo.speed) {
             cu.sync.speed = syncInfo.speed;
@@ -371,7 +371,7 @@ var ClientUnit = {
             //sprite: util.newPlane(util.gridX(x), util.gridY(y), 20, 20, player.color),
             sprite: Sprite.create(util.gridX(x), util.gridY(y), 20, 20, "snake",
                 [{name: "idle", num: 6, loop: true},
-                 {name: "walk", num: 6, loop: true},
+                 {name: "move", num: 6, loop: true},
                  {name: "attack", num: 9, loop: true}],
                  dx < 0),
             sync: {
@@ -417,6 +417,13 @@ var ClientUnit = {
         }
     },
 
+    setStatus: function (cu, status) {
+        cu.sync.status = status;
+        //cu.sprite.currAniName = status;
+        console.log("set status", cu.player.game.playerId, cu.player.playerId, cu.id, status);
+        Sprite.setAni(cu.sprite, status);
+    },
+
     simu1f: function (cu) {
         if (cu.sync.status == "move") {
             var oldSimuPos = cu.simu.pos.clone();
@@ -445,6 +452,8 @@ var ClientUnit = {
     },
 
     onSimuCollide: function (cu, collider) {
+        console.log("collide", cu.player.game.playerId, cu.id, collider.id);
+        ClientUnit.setStatus(cu, "attack");
     },
 
     update: function (cu) {
