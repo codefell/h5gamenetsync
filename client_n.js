@@ -229,12 +229,16 @@ var ClientGame = {
                 cg.simuFrame++;
             }
 
+            /*
             MapList.call(cg.players, ClientPlayer.setCompensate);
             cg.showCpStart = currFrame;
             cg.showCpLast = currFrame;
-            cg.syncInfo = [];
+            */
 
             MapList.call(cg.players, ClientPlayer.show1f, 0);
+            MapList.call(cg.players, ClientPlayer.setCompensate);
+            cg.syncInfo = [];
+
             //cg.showCpLast++;
         }
         else {
@@ -397,6 +401,7 @@ var ClientUnit = {
             },
             show: {
                 pos: new THREE.Vector3(x, y, 0),
+                speed: speed,
                 cpPos: new THREE.Vector3(),
             },
         };
@@ -432,7 +437,7 @@ var ClientUnit = {
             cu.simu.pos = util.move(cu.simu.pos,
                     cu.sync.direction, cu.sync.speed, config.frameInterval);
             //if (recordLastTranslate) {
-                cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
+            //    cu.simu.lastSimuTranslate.copy(cu.simu.pos).sub(oldSimuPos);
             //}
         }
         if (cu.player.game.simuFrame % 1 == 0) {
@@ -441,17 +446,27 @@ var ClientUnit = {
     },
 
     setCompensate: function (cu) {
-        cu.show.cpPos.copy(cu.simu.pos).sub(cu.show.pos);
+        //cu.show.cpPos.copy(cu.simu.pos).sub(cu.show.pos);
+        var difpos = cu.simu.pos.clone().sub(cu.show.pos).length();
+        cu.show.speed = cu.sync.speed + Math.sign(cu.sync.speed) * difpos * 10;
     },
 
     show1f: function (cu, cpAlpha) {
-        //var deltaSimuPos = ClientUnit.simu(cu, deltaFrame);
-        //cu.show.pos.add(deltaSimuPos);
+        /*
         cu.show.pos.add(cu.simu.lastSimuTranslate);
         cu.simu.lastSimuTranslate.set(0, 0, 0);
         var cpPos = cu.show.cpPos.clone().multiplyScalar(cpAlpha);
         cu.show.pos.add(cpPos)
         console.log("show1f", cu.id, JSON.stringify(cu.show.pos));
+        */
+        if (cu.sync.status == "move") {
+            var ret = util.moveTo(cu.show.pos, cu.simu.pos, cu.show.speed, config.frameInterval);
+            cu.show.pos = ret[0];
+            var reach = ret[1];
+            if (reach) {
+                cu.show.speed = cu.sync.speed;
+            }
+        }
     },
 
     onSimuCollide: function (cu, collider) {

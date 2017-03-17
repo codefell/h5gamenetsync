@@ -23,6 +23,17 @@ var util = {
         pos = direction.clone().normalize().multiplyScalar(dis).add(pos);
         return pos;
     },
+    moveTo: function (pos, target, speed, time) {
+        var v = target.clone().sub(pos);
+        var dis = speed * time;
+        var reach = false;
+        if (dis > v.length()) {
+            dis = v.length();
+            reach = true;
+        }
+        v.normalize().multiplyScalar(dis);
+        return [v.add(pos), reach];
+    },
     array: {
         add: function (arr, e) {
             for (var i in arr) {
