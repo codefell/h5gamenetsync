@@ -7,20 +7,34 @@ $(function () {
     });
     $("#next").click(function () {
         UpdateHandles.update();
-        var unit00 = client0.game.players.list[0].units.list[0];
-        //var unit01 = client0.game.players.list[1].units.list[0];
     });
 
     $(document).keydown(function (e) {
         var key = String.fromCharCode(e.which);
-        if (key == "I") {
-            /*
-            var unit10 = client1.game.players.list[0].units.list[0];
-            var unit11 = client1.game.players.list[1].units.list[0];
-            console.log("client 1", client1.game.syncFrame, client1.game.simuFrame);
-            console.log("unit0", unit10.sync.pos, unit10.simu.pos, unit10.show.pos);
-            console.log("unit1", unit11.sync.pos, unit11.simu.pos, unit11.show.pos);
-            */
+        if (key == "C") {
+            console.log("client0");
+            var unit0 = client0.game.players.list[0].units.list[0];
+            var unit1 = client0.game.players.list[1].units.list[0];
+            console.log("unit0", unit0.sync.pos, unit0.simu.pos, unit0.show.pos);
+            console.log("unit1", unit1.sync.pos, unit1.simu.pos, unit1.show.pos);
+
+            console.log("client1");
+            var unit0 = client1.game.players.list[0].units.list[0];
+            var unit1 = client1.game.players.list[1].units.list[0];
+            console.log("unit0", unit0.sync.pos, unit0.simu.pos, unit0.show.pos);
+            console.log("unit1", unit1.sync.pos, unit1.simu.pos, unit1.show.pos);
+        }
+        else if (key == "E") {
+            console.log("server eval");
+            var server = Server.getInst();
+            Server.eval(server);
+        }
+        else if (key == "S") {
+            var server = Server.getInst();
+            for (var i in server.players.list) {
+                var unit = server.players.list[i].units.list[0];
+                console.log("server unit", unit.id, unit.pos);
+            }
         }
     });
 

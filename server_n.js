@@ -122,15 +122,11 @@ var Server = {
             syncInfo: server.syncInfo,
         });
 
-        var si = server.syncInfo;
-        console.log("server send msg", frameNum, JSON.stringify(server.syncInfo));
-
         if (server.syncInfo.length > 0) {
             server.syncSeq.push({frameIndex: frameNum, syncInfo: server.syncInfo});
             server.syncInfo = [];
         }
-        //server.syncFrame = frameNum;
-        Server.eval(server);
+
     },
     eval: function (server) {
         var frameNum = Math.floor(
@@ -138,18 +134,12 @@ var Server = {
                 / config.frameInterval);
 
         var deltaFrame = frameNum - server.syncFrame;
-        console.log("server eval", server.syncFrame, "->", frameNum);
 
         for (var i = 0; i < deltaFrame; i++) {
             MapList.call(server.players, ServerPlayer.sync1f);
             server.syncFrame++;
             if (server.syncSeq.length > 0) {
-                console.log("server set player info at", server.syncFrame, JSON.stringify(server.syncSeq[0]));
-
-
                 if (server.syncFrame == server.syncSeq[0].frameIndex) {
-
-
                     var syncInfo = server.syncSeq[0].syncInfo;
                     for (var j in syncInfo){
                         var playerSyncInfo = syncInfo[j];
@@ -263,11 +253,6 @@ var ServerUnit = {
     },
     sync1f: function (su) {
         if (su.status == "move") {
-            var oldPos = su.pos.clone();
-            console.log("server ->",
-                JSON.stringify(su.pos),
-                JSON.stringify(su.direction),
-                JSON.stringify(su.speed));
             su.pos = util.move(su.pos,
                 su.direction, su.speed, config.frameInterval);
         }
