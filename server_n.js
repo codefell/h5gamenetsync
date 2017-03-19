@@ -116,22 +116,24 @@ var Server = {
         }
         */
 
-        Server.sendMsg(server, {
-            type: "sync",
-            frameIndex: frameNum,
-            syncInfo: server.syncInfo,
-        });
+        if (frameNum % 6 == 0) {
+            Server.sendMsg(server, {
+                type: "sync",
+                frameIndex: frameNum,
+                syncInfo: server.syncInfo,
+            });
 
-        if (server.syncInfo.length > 0) {
-            server.syncSeq.push({frameIndex: frameNum, syncInfo: server.syncInfo});
-            server.syncInfo = [];
+            if (server.syncInfo.length > 0) {
+                server.syncSeq.push({frameIndex: frameNum, syncInfo: server.syncInfo});
+                server.syncInfo = [];
+            }
         }
-
     },
     eval: function (server) {
         var frameNum = Math.floor(
                 (UpdateHandles.time - server.startTime)
                 / config.frameInterval);
+        frameNum = frameNum - (frameNum % 6);
 
         var deltaFrame = frameNum - server.syncFrame;
 

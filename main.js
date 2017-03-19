@@ -2,6 +2,7 @@ $(function () {
 
     $("#action").click(function () {
         Client.opTest(client0);
+        Client.opTest(client1);
     });
 
     $(document).keydown(function (e) {
@@ -13,10 +14,32 @@ $(function () {
             Client.opTestSpeed(Client.currOpClient);
         }
         else if (key == "I") {
-            //console.log(client0.game.players.list[0].units.list[0]);
-            //console.log(Server.getInst().players.list[0].units.list[0]);
-            //console.log(client1.game.players.list[0].units.list[0]);
-            //console.log(Server.getInst().players.list[1].units.list[0]);
+            for (var i in Client.allClient) {
+                var client = Client.allClient[i];
+                console.log("client", client.divId, client.game.syncFrame);
+                for (var j in client.game.players.list) {
+                    var player = client.game.players.list[j];
+                    console.log("player", player.id);
+                    for (var k in player.units.list) {
+                        var unit = player.units.list[k];
+                        console.log("unit", unit.id,
+                            JSON.stringify(unit.sync.pos),
+                            JSON.stringify(unit.simu.pos),
+                            JSON.stringify(unit.show.pos));
+                    }
+                }
+            }
+            var server = Server.getInst();
+            Server.eval(server);
+            console.log("server", server.syncFrame);
+            for (var i in server.players.list) {
+                var player = server.players.list[i];
+                console.log("player", player.id);
+                for (var k in player.units.list) {
+                    var unit = player.units.list[k];
+                    console.log("unit", unit.id, JSON.stringify(unit.pos));
+                }
+            }
         }
     });
 

@@ -12,10 +12,12 @@ function Connection(id, frameRate, frameRateFloat, serverRecvHandler, clientRecv
     };
 
     Connection.prototype.clientSend = function (msg) {
+        msg = JSON.parse(JSON.stringify(msg));
         this.clientSendBuf.push({'handleTimestamp': this.handleTime(), 'msg': msg});
     };
 
     Connection.prototype.serverSend = function (msg) {
+        msg = JSON.parse(JSON.stringify(msg));
         this.clientRecvBuf.push({'handleTimestamp': this.handleTime(), 'msg': msg});
     };
 

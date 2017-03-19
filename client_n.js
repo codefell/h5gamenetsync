@@ -402,7 +402,7 @@ var ClientUnit = {
             sync: {
                 pos: new THREE.Vector3(x, y, 0),
                 direction: new THREE.Vector3(dx, dy, 0),
-                status: "move",
+                status: "idle",
                 speed: speed,
             },
             simu: {
