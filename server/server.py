@@ -4,73 +4,97 @@ import datetime
 import random 
 import aiomysql
 import sys
+import logging
+
+'''
+serverInfo = {
+    start: False,
+    startTime: 0,
+    syncFrame: 0
+    syncInfo: [],
+    syncSeq: [],
+}
+'''
 
 class Client:
 
     allClient = set()
 
-    @asyncio.coroutine
-    def sendMsgAll(msg):
+    async def sendMsgAll(msg):
         for client in Client.allClient:
-            yield from client.sendMsg(msg)
+            await client.sendMsg(msg)
 
     def __init__(self, websocket):
         self.websocket = websocket
         self.sendQueue = asyncio.Queue()
         Client.allClient.add(self)
 
-    @asyncio.coroutine
-    def loop(self):
-        self.rc = asyncio.ensure_future(self.send)
-        self.sc = asyncio.ensure_future(sendCoro(websocket))
-        yield from asyncio.wait([sc, rc])
-        Client.allClient.remove(websocket)
+    async def close(self):
+        self.rc.cancel()
+        self.sc.cancel()
+        await asyncio.wait([self.sc, self.rc, self.websocket.close()])
+
+    async def loop(self):
+        self.rc = asyncio.ensure_future(self.recvCoro())
+        self.sc = asyncio.ensure_future(self.sendCoro())
+        await asyncio.wait([self.sc, self.rc])
+        await self.websocket.close()
+        Client.allClient.remove(self)
         print("client loop end")
 
-    @asyncio.coroutine
-    def sendMsg(self, msg):
-        yield from self.sendQueue.put(msg)
+    async def sendMsg(self, msg):
+        await self.sendQueue.put(msg)
 
-    @asyncio.coroutine
-    def sendCoro(self):
+    async def sendCoro(self):
         try:
             while True:
-                msg = yield from self.sendQueue.get()
+                msg = await self.sendQueue.get()
                 print("send " + msg)
-                yield from self.websocket.send(msg);
+                await self.websocket.send(msg);
         except websockets.exceptions.ConnectionClosed as e:
             print("sendCoro close")
+        except Exception as e:
+            print(str(e))
         finally:
             self.rc.cancel()
 
-    @asyncio.coroutine
-    def recvCoro(self):
+    async def recvCoro(self):
         try:
             while True:
-                msg = yield from self.websocket.recv()
-                yield from onRecvMsg(msg)
+                msg = await self.websocket.recv()
+                await self.onRecvMsg(msg)
         except websockets.exceptions.ConnectionClosed as e:
             print("recvCoro close")
+        except Exception as e:
+            print(str(e))
         finally:
             self.sc.cancel()
 
-    @asyncio.coroutine
-    def onRecvMsg(self, msg):
-        yield from Client.sendMsgAll(msg)
+    async def onRecvMsg(self, msg):
+        print("recv msg", msg)
+        await Client.sendMsgAll(msg)
 
-@asyncio.coroutine
-def serve(websocket, path):
+async def serve(websocket, path):
+    print(dir(websocket))
     print("new websocket" + path)
     client = Client(websocket)
-    yield from client.loop()
+    await client.loop()
 
 loop = asyncio.get_event_loop()
+loop.set_debug(True)
+logging.basicConfig(level=logging.DEBUG)
 start_server = websockets.serve(serve, '127.0.0.1', 8000)
 loop.run_until_complete(start_server)
 
 try:
     loop.run_forever()
 except KeyboardInterrupt as e:
+    start_server.close()
+    cos = []
+    for client in set(Client.allClient):
+        cos.append(client.close())
+    if cos:
+        loop.run_until_complete(asyncio.wait(cos))
     print("exit")
 
 '''

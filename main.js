@@ -17,6 +17,9 @@ $(function () {
     function onError(evt) { 
         console.log('Error occured: ' + evt); 
     }
+    $("#action").click(function () {
+        window.websocket.send("hello world");
+    });
     return;
 
     $("#action").click(function () {
