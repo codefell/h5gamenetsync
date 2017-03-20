@@ -6,28 +6,175 @@ import aiomysql
 import sys
 import logging
 
-'''
-serverInfo = {
-    start: False,
-    startTime: 0,
-    syncFrame: 0
-    syncInfo: [],
-    syncSeq: [],
-}
-'''
+class Player:
+    def __init__(self, id, color):
+        self.id = id
+        self.ready = False
+        self.units = []
+        self.color = color
 
-class Client:
+    def getInfo(self):
+        units = []
+        for unit in self.units:
+            units.append(unit.getInfo())
+        info = {
+            "units": units
+        }
+        return info
+    def setSyncInfo(self, syncInfo):
+        unitsInfo = ("unitsInfo" in syncInfo) ? syncInfo["unitsInfo"] : []
+        for unitInfo in unitsInfo:
+            unit = Util.getInList(self.units, unitInfo.id)
+            unit.setSyncInfo(unitInfo)
+    def addUnit(self, id, x, y, dx, dy, speed):
+        unit = Unit(id, x, y, dx, dy, speed, self)
+        self.units.append(unit)
+        return unit
+    def setPlayerInfo(self, playerInfo):
+        unitsInfo = playerInfo.units
+        for unitInfo in unitsInfo:
+            unit = Unit(unitInfo["id"],
+                unitInfo["x"],
+                unitInfo["y"],
+                unitInfo["dx"],
+                unitInfo["dy"],
+                unitInfo["speed"],
+                self)
+            self.units.append(unit)
+    def sync1f(self):
+        for unit in self.units:
+            unit.sync1f()
 
-    allClient = set()
+class Unit:
+    def __init__(self, id, x, y, dx, dy, speed, player):
+        self.id = id,
+        self.x = x
+        self.y = y
+        self.dx = dx
+        self.dy = dy
+        self.status = "idle",
+        self.speed = speed
+        self.player = player
+    def getInfo(self):
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "dx": self.dx,
+            "dy": self.dy,
+            "speed": self.speed
+        }
+    def setSyncInfo(self, info):
+        if "direction" in info:
+            self.dx = info["direction"]["x"]
+            self.dy = info["direction"]["y"]
+        if "status" in info:
+            self.status = info["status"]
+        if "speed" in info:
+            self.speed = info["speed"]
+    def sync1f(self):
+        if self.status == "move":
+            su.x, su.y = Util.move(
+                self.x, self.y
+                self.dx, self.dy,
+                self.speed, Config.frameInterval)
+
+
+class Server:
+    inst = None
+    def getInst():
+        if not inst:
+            inst = Server()
+        return inst
+
+    def __inif__(self):
+        self.start = False
+        self.startTime = 0
+        self.syncFrame = 0
+        self.syncInfo = []
+        self.syncSeq = []
+        self.players = []
+
+    async def onLogin(self, conn, msg):
+        loginPlayer = Player(conn, msg["id"], msg["color"])
+        self.players.append(loginPlayer)
+        for player in self.players:
+            if player.getId() != msg["id"]:
+                await player.getConn().sendMsg({
+                    "type": "addPlayer",
+                    "playerId": loginPlayer.id,
+                    "color": loginPlayer.color,
+                })
+                await loginPlayer.getConn().sendMsg({
+                    "type": "addPlayer",
+                    "playerId": player.getId(),
+                    "color": player.getColor(),
+                })
+                if player.getReady():
+                    await loginPlayer.getConn().sendMsg({
+                        "type": "playerReady",
+                        "playerInfo": player.getInfo(),
+                        playerId: player.getId(),
+                    })
+    async def onReady(self, conn, msg):
+        player = Util.getInList(self.players, msg["id"])
+        player.setPlayerInfo(msg["playerInfo"])
+        player.setReady(True)
+        readyNum = 0
+        for player in self.players:
+            if player.getReady():
+                readyNum += 1
+            if player.getId() != msg["id"]:
+                await player.getConn().sendMsg({
+                    "type": "playerReady",
+                    "playerInfo": msg["playerInfo"]
+                    "playerId": msg["id"]
+                })
+        if readyNum == 2:
+            self.start = True
+            self.startTime = time.time()
+            await Connection.sendMsgAll({
+                "type": "start"
+            })
+    
+    def onOp(self, msg):
+        si = {"playerId": msg["id"]}
+        if "unitsInfo" in msg:
+            si["unitsInfo"] = msg["unitsInfo"]
+        self.syncInfo.append(si)
+
+    async def update(self):
+        frameNum = int((time.time() - self.startTime) / Config.frameInterval)
+        if frameNum % 6 == 0:
+            await Connection.sendMsgAll({
+                "type": "sync",
+                "frameIndex": frameNum,
+                syncInfo: self.syncInfo,
+            })
+
+            if self.syncInfo.length > 0:
+                server.syncSeq.append({
+                    "frameIndex": frameNum,
+                    "syncInfo": self.syncInfo,
+                })
+                self.syncInfo = []
+    def eval(self):
+        frameNum = int((time.time() - self.startTime) / Config.frameInterval)
+        frameNum = frameNum - (
+
+
+class Connection:
+
+    allConnection = set()
 
     async def sendMsgAll(msg):
-        for client in Client.allClient:
-            await client.sendMsg(msg)
+        for conn in Connection.allConnection:
+            await conn.sendMsg(msg)
 
     def __init__(self, websocket):
         self.websocket = websocket
         self.sendQueue = asyncio.Queue()
-        Client.allClient.add(self)
+        Connection.allConnection.add(self)
 
     async def close(self):
         self.rc.cancel()
@@ -39,8 +186,8 @@ class Client:
         self.sc = asyncio.ensure_future(self.sendCoro())
         await asyncio.wait([self.sc, self.rc])
         await self.websocket.close()
-        Client.allClient.remove(self)
-        print("client loop end")
+        Connection.allConnection.remove(self)
+        print("conn loop end")
 
     async def sendMsg(self, msg):
         await self.sendQueue.put(msg)
@@ -72,13 +219,13 @@ class Client:
 
     async def onRecvMsg(self, msg):
         print("recv msg", msg)
-        await Client.sendMsgAll(msg)
+        await Connection.sendMsgAll(msg)
 
 async def serve(websocket, path):
     print(dir(websocket))
     print("new websocket" + path)
-    client = Client(websocket)
-    await client.loop()
+    conn = Connection(websocket)
+    await conn.loop()
 
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
@@ -91,8 +238,8 @@ try:
 except KeyboardInterrupt as e:
     start_server.close()
     cos = []
-    for client in set(Client.allClient):
-        cos.append(client.close())
+    for conn in set(Connection.allConnection):
+        cos.append(conn.close())
     if cos:
         loop.run_until_complete(asyncio.wait(cos))
     print("exit")
