@@ -4,6 +4,7 @@ import datetime
 import random 
 import aiomysql
 import sys
+import json
 import logging
 
 class Player:
@@ -22,7 +23,7 @@ class Player:
         }
         return info
     def setSyncInfo(self, syncInfo):
-        unitsInfo = ("unitsInfo" in syncInfo) ? syncInfo["unitsInfo"] : []
+        unitsInfo = syncInfo["unitsInfo"] if ("unitsInfo" in syncInfo) else []
         for unitInfo in unitsInfo:
             unit = Util.getInList(self.units, unitInfo.id)
             unit.setSyncInfo(unitInfo)
@@ -75,7 +76,7 @@ class Unit:
     def sync1f(self):
         if self.status == "move":
             su.x, su.y = Util.move(
-                self.x, self.y
+                self.x, self.y,
                 self.dx, self.dy,
                 self.speed, Config.frameInterval)
 
@@ -83,9 +84,9 @@ class Unit:
 class Server:
     inst = None
     def getInst():
-        if not inst:
-            inst = Server()
-        return inst
+        if not Server.inst:
+            Server.inst = Server()
+        return Server.inst
 
     def __inif__(self):
         self.start = False
@@ -94,6 +95,13 @@ class Server:
         self.syncInfo = []
         self.syncSeq = []
         self.players = []
+
+    def loop(self):
+        global loop
+        #self.update()
+        print("hello", loop.time())
+        loop.call_later(Config.frameInterval,
+            self.loop)
 
     async def onLogin(self, conn, msg):
         loginPlayer = Player(conn, msg["id"], msg["color"])
@@ -127,8 +135,8 @@ class Server:
             if player.getId() != msg["id"]:
                 await player.getConn().sendMsg({
                     "type": "playerReady",
-                    "playerInfo": msg["playerInfo"]
-                    "playerId": msg["id"]
+                    "playerInfo": msg["playerInfo"],
+                    "playerId": msg["id"],
                 })
         if readyNum == 2:
             self.start = True
@@ -160,8 +168,19 @@ class Server:
                 self.syncInfo = []
     def eval(self):
         frameNum = int((time.time() - self.startTime) / Config.frameInterval)
-        frameNum = frameNum - (
-
+        frameNum = frameNum - (frameNum % 6)
+        deltaFrame = frameNum - self.syncFrame
+        for i in range(0, deltaFrame):
+            for player in self.players:
+                player.sync1f()
+            self.syncFrame += 1;
+            if self.syncSeq.length > 0:
+                if self.syncFrame == self.syncSeq[0].frameIndex:
+                    syncInfo = self.syncSeq[0].syncInfo
+                    for playerSyncInfo in syncInfo:
+                        player = Util.getInList(self.players, playerSyncInfo["playerId"])
+                        player.setSyncInfo(playerSyncInfo)
+                    self.syncSeq = self.syncSeq[1:]
 
 class Connection:
 
@@ -190,6 +209,7 @@ class Connection:
         print("conn loop end")
 
     async def sendMsg(self, msg):
+        msg = json.dumps(msg)
         await self.sendQueue.put(msg)
 
     async def sendCoro(self):
@@ -230,18 +250,21 @@ async def serve(websocket, path):
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
 logging.basicConfig(level=logging.DEBUG)
-start_server = websockets.serve(serve, '127.0.0.1', 8000)
-loop.run_until_complete(start_server)
+#start_server = websockets.serve(serve, '127.0.0.1', 8000)
+#loop.run_until_complete(start_server)
+loop.call_soon(Server.getInst().loop)
 
 try:
     loop.run_forever()
 except KeyboardInterrupt as e:
+    '''
     start_server.close()
     cos = []
     for conn in set(Connection.allConnection):
         cos.append(conn.close())
     if cos:
         loop.run_until_complete(asyncio.wait(cos))
+    '''
     print("exit")
 
 '''
