@@ -114,12 +114,17 @@ class Server:
         self.syncInfo = []
         self.syncSeq = []
         self.players = []
+        self.playerId = 0
+
+    def getNextPlayerId(self):
+        playerId = "playerId" + str(self.playerId)
+        self.playerId += 1
+        return playerId
 
     async def loop(self):
         global loop
         try:
             while True:
-                print("loop", loop.time())
                 await self.update()
                 await asyncio.sleep(Config.frameInterval * 10)
         except Exception as e:
@@ -128,10 +133,16 @@ class Server:
         #    raise e
 
     async def onLogin(self, conn, msg):
-        loginPlayer = Player(conn, msg["id"], msg["color"])
+        playerId = self.getNextPlayerId()
+        loginPlayer = Player(conn, playerId, msg["color"])
         self.players.append(loginPlayer)
+        await loginPlayer.conn.sendMsg({
+            "type": "login",
+            "id": playerId,
+        });
+
         for player in self.players:
-            if player.id != msg["id"]:
+            if player.id != playerId:
                 await player.conn.sendMsg({
                     "type": "addPlayer",
                     "playerId": loginPlayer.id,
@@ -146,7 +157,7 @@ class Server:
                     await loginPlayer.conn.sendMsg({
                         "type": "playerReady",
                         "playerInfo": player.getInfo(),
-                        playerId: player.id,
+                        "playerId": player.id,
                     })
     async def onReady(self, conn, msg):
         player = Util.getInList(self.players, msg["id"])
@@ -162,9 +173,12 @@ class Server:
                     "playerInfo": msg["playerInfo"],
                     "playerId": msg["id"],
                 })
+        print("------------ ready num % -------------", readyNum)
+
         if readyNum == 2:
             self.start = True
             self.startTime = loop.time()
+            print("------------ server start -------------")
             await Connection.sendMsgAll({
                 "type": "start"
             })
@@ -279,7 +293,7 @@ async def serve(websocket, path):
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
 logging.basicConfig(level=logging.DEBUG)
-start_server = websockets.serve(serve, '127.0.0.1', 8000)
+start_server = websockets.serve(serve, '192.168.1.10', 8000)
 loop.run_until_complete(start_server)
 server_coro = asyncio.ensure_future(Server.getInst().loop())
 

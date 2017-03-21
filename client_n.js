@@ -9,7 +9,7 @@ var Client = {
             width: je.width(),
             height: je.height(),
         };
-        client.game = ClientGame.create(divId, color, client),
+        client.game = ClientGame.create(client),
         Client.allClient[divId] = client;
 
         var updateHandle = 
@@ -24,7 +24,7 @@ var Client = {
                 };
             }(client));
         */
-        var conn = new WebSocket("ws://localhost:8000");
+        var conn = new WebSocket("ws://192.168.1.10:8000");
         conn.client = client;
         conn.onopen = function (evt) {
             var client = evt.target.client;
@@ -57,11 +57,11 @@ var Client = {
             Client.currOpClient = client;
             x = -(client.width/2 - x);
             y = client.height/2 - y;
-            var unit = MapList.get(client.game.players, client.divId).units.list[0];
+            var unit = ClientGame.getLocalPlayer(client.game).units.list[0];
             var dir = new THREE.Vector3(x, y, 0);
             dir.sub(unit.sync.pos).normalize();
             client.conn.send(JSON.stringify({
-                id: client.divId,
+                id: client.game.playerId,
                 type: "op",
                 unitsInfo: [
                     {
@@ -88,7 +88,7 @@ var Client = {
     opFire: function (client) {
         var unit = client.game.players.list[0].units.list[0];
         client.conn.send(JSON.stringify({
-            id: client.divId,
+            id: client.game.playerId,
             type: "op",
             firesInfo: [
                 {
@@ -100,11 +100,11 @@ var Client = {
         }));
     },
     opTest1: function (client) {
-        var player = MapList.get(client.game.players, client.divId);
+        var player = MapList.get(client.game.players, client.game.playerId);
         var unit = player.units.list[0];
         var unit = client.game.players.list[0].units.list[0];
         client.conn.send(JSON.stringify({
-            id: client.divId,
+            id: client.game.playerId,
             type: "op",
             unitsInfo: [
                 {
@@ -115,14 +115,14 @@ var Client = {
         }));
     },
     opTest: function (client) {
-        var player = MapList.get(client.game.players, client.divId);
+        var player = MapList.get(client.game.players, client.game.playerId);
         var unit = player.units.list[0];
         var status = "move";
         if (unit.sync.status == "move") {
             status = "idle";
         }
         client.conn.send(JSON.stringify({
-            id: client.divId,
+            id: client.game.playerId,
             type: "op",
             unitsInfo: [
                 {
@@ -134,10 +134,23 @@ var Client = {
     },
     login: function (client) {
         client.conn.send(JSON.stringify({
-            id: client.divId,
             type: 'login',
             color: client.color,
         }));
+    },
+    onLogin: function(client, msg) {
+        ClientGame.addLocalPlayer(client.game,
+            msg.id, client.color);
+        var width = client.width;
+        var height = client.height;
+        Client.addLocalUnits(client, [{
+            x: 10 + -width/2 + (width - 20) * Math.random(),
+            y: 10 + -height/2 + (height- 20) * Math.random(),
+            y: 20,
+            speed: 30,
+            dx: 1,
+            dy: 1,
+        }]);
     },
     onAddPlayer: function (client, msg) {
         ClientGame.addPlayer(client.game, msg.playerId, msg.color);
@@ -146,7 +159,7 @@ var Client = {
         var player = ClientGame.getLocalPlayer(client.game);
         var playerInfo = ClientPlayer.getInfo(player);
         client.conn.send(JSON.stringify({
-            id: client.divId,
+            id: client.game.playerId,
             type: 'ready',
             playerInfo: playerInfo,
         }));
@@ -173,19 +186,22 @@ var Client = {
 };
 
 var ClientGame = {
-    create: function (playerId, color, client) {
+    create: function (client) {
         var game = {
             client: client,
             start: true,
             syncFrame: 0,
             simuFrame: 0,
             startTime: UpdateHandles.time,
-            playerId: playerId,
+            playerId: undefined,
             players: MapList.create(),
             syncInfo: [],
         };
-        ClientGame.addPlayer(game, game.playerId, color);
         return game;
+    },
+    addLocalPlayer: function (cg, playerId, color) {
+        cg.playerId = playerId;
+        ClientGame.addPlayer(cg, playerId, color);
     },
 
     start: function (cg) {
@@ -286,7 +302,6 @@ var ClientGame = {
             }
         }
         MapList.call(cg.players, ClientPlayer.update);
-        var unit = cg.players.list[0].units.list[0];
     },
 };
 
@@ -409,6 +424,7 @@ var ClientUnit = {
             cu.sync.direction.y = syncInfo.direction.y;
         }
         if (syncInfo.status) {
+            console.log("change status");
             cu.sync.status = syncInfo.status;
         }
         if (syncInfo.speed) {

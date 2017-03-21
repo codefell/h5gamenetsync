@@ -2,15 +2,15 @@ $(function () {
 
     $("#action").click(function () {
         Client.opTest(client0);
-        Client.opTest(client1);
+        //Client.opTest(client1);
     });
     $("#login").click(function () {
         Client.login(client0);
-        Client.login(client1);
+        //Client.login(client1);
     });
     $("#ready").click(function () {
         Client.ready(client0);
-        Client.ready(client1);
+        //Client.ready(client1);
     });
 
     $(document).keydown(function (e) {
@@ -51,11 +51,15 @@ $(function () {
         }
     });
 
+    /*
     var server = Server.getInst();
     var serverUpdateHandle = 
         UpdateHandles.addUpdate(Server.update, server);
-    var client0 = Client.create("WebGLoutput0", 0xcccc7f);
-    var client1 = Client.create("WebGLoutput1", 0x7fcccc);
+    */
+
+    var client0 = Client.create("WebGLoutput0", Math.floor(0xFFFFFF * Math.random()));
+    //var client1 = Client.create("WebGLoutput1", 0x7fcccc);
+        /*
     Client.addLocalUnits(client0, [
         {
             x: 20,
@@ -64,15 +68,15 @@ $(function () {
             dx: 1,
             dy: 1,
         },
-        /*
         {
             x: -40,
             y: -40,
             speed: 35,
         },
-        */
     ]);
+        */
 
+        /*
     Client.addLocalUnits(client1, [
         {
             x: 20,
@@ -81,14 +85,13 @@ $(function () {
             dx: 0,
             dy: 1,
         },
-        /*
         {
             x: 40,
             y: -40,
             speed: 35,
         },
-        */
     ]);
+        */
     /*
     Client.login(client0);
     Client.login(client1);
