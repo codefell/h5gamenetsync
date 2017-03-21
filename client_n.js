@@ -148,7 +148,7 @@ var Client = {
             y: 10 + -height/2 + (height- 20) * Math.random(),
             y: 20,
             speed: 30,
-            dx: 1,
+            dx: 0,
             dy: 1,
         }]);
     },
@@ -422,6 +422,13 @@ var ClientUnit = {
         if (syncInfo.direction) {
             cu.sync.direction.x = syncInfo.direction.x;
             cu.sync.direction.y = syncInfo.direction.y;
+
+            cu.sync.direction.normalize();
+            var quaternion = new THREE.Quaternion();
+            quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                cu.sync.direction);
+            cu.sprite.quaternion.copy(quaternion);
         }
         if (syncInfo.status) {
             console.log("change status");
@@ -460,6 +467,8 @@ var ClientUnit = {
                 cpPos: new THREE.Vector3(),
             },
         };
+        var head = util.newPlane(0, 15, 10, 10, player.color);
+        unit.sprite.add(head);
         unit.player.game.client.sceneInfo.scene.add(unit.sprite);
         return unit;
     },

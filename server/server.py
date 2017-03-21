@@ -173,7 +173,6 @@ class Server:
                     "playerInfo": msg["playerInfo"],
                     "playerId": msg["id"],
                 })
-        print("------------ ready num % -------------", readyNum)
 
         if readyNum == 2:
             self.start = True
