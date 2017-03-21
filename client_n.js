@@ -15,6 +15,7 @@ var Client = {
         var updateHandle = 
             UpdateHandles.addUpdate(Client.update, client);
 
+        /*
         var conn = new Connection(divId, 0, 0,
             Server.getRecvHandle(Server.getInst()),
             function (o) {
@@ -22,11 +23,33 @@ var Client = {
                     Client.recvHandler(o, msg);
                 };
             }(client));
+        */
+        var conn = new WebSocket("ws://localhost:8000");
+        conn.client = client;
+        conn.onopen = function (evt) {
+            var client = evt.target.client;
+            console.log("connect ", client.divId);
+        };
+        conn.onclose = function (evt) {
+            var client = evt.target.client;
+            console.log("close ", client.divId);
+        };
+        conn.onmessage = function (evt) {
+            var client = evt.target.client;
+            var msg = JSON.parse(evt.data);
+            var method = "on" + util.headCharUp(msg.type);
+            Client[method](client, msg);
+        };
+        conn.onerror = function (evt) {
+            var client = evt.target.client;
+            console.log("error ", client.divId);
+        };
 
         client.conn = conn;
         client.updateHandle = updateHandle;
 
         $('#'+divId).click(function (e) {
+            console.log("send new direction");
             var rect0 = $(this)[0].getBoundingClientRect();
             var x = Math.floor(e.clientX - rect0.left);
             var y = Math.floor(e.clientY - rect0.top);
@@ -37,7 +60,8 @@ var Client = {
             var unit = MapList.get(client.game.players, client.divId).units.list[0];
             var dir = new THREE.Vector3(x, y, 0);
             dir.sub(unit.sync.pos).normalize();
-            client.conn.clientSend({
+            client.conn.send(JSON.stringify({
+                id: client.divId,
                 type: "op",
                 unitsInfo: [
                     {
@@ -45,7 +69,7 @@ var Client = {
                         direction: {x: dir.x, y: dir.y},
                     },
                 ],
-            });
+            }));
         });
 
         return client;
@@ -63,7 +87,8 @@ var Client = {
     },
     opFire: function (client) {
         var unit = client.game.players.list[0].units.list[0];
-        client.conn.clientSend({
+        client.conn.send(JSON.stringify({
+            id: client.divId,
             type: "op",
             firesInfo: [
                 {
@@ -72,13 +97,14 @@ var Client = {
                     speed: 50,
                 },
             ],
-        });
+        }));
     },
     opTest1: function (client) {
         var player = MapList.get(client.game.players, client.divId);
         var unit = player.units.list[0];
         var unit = client.game.players.list[0].units.list[0];
-        client.conn.clientSend({
+        client.conn.send(JSON.stringify({
+            id: client.divId,
             type: "op",
             unitsInfo: [
                 {
@@ -86,7 +112,7 @@ var Client = {
                     speed: 70,
                 },
             ],
-        });
+        }));
     },
     opTest: function (client) {
         var player = MapList.get(client.game.players, client.divId);
@@ -95,7 +121,8 @@ var Client = {
         if (unit.sync.status == "move") {
             status = "idle";
         }
-        client.conn.clientSend({
+        client.conn.send(JSON.stringify({
+            id: client.divId,
             type: "op",
             unitsInfo: [
                 {
@@ -103,13 +130,14 @@ var Client = {
                     status: status,
                 },
             ],
-        })
+        }))
     },
     login: function (client) {
-        client.conn.clientSend({
+        client.conn.send(JSON.stringify({
+            id: client.divId,
             type: 'login',
             color: client.color,
-        });
+        }));
     },
     onAddPlayer: function (client, msg) {
         ClientGame.addPlayer(client.game, msg.playerId, msg.color);
@@ -117,10 +145,11 @@ var Client = {
     ready: function (client) {
         var player = ClientGame.getLocalPlayer(client.game);
         var playerInfo = ClientPlayer.getInfo(player);
-        client.conn.clientSend({
+        client.conn.send(JSON.stringify({
+            id: client.divId,
             type: 'ready',
             playerInfo: playerInfo,
-        });
+        }));
     },
     onPlayerReady: function (client, msg) {
         ClientPlayer.initInfo(ClientGame.getPlayer(client.game, msg.playerId),

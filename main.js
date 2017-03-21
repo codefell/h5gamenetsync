@@ -1,30 +1,16 @@
 $(function () {
-    var wsServer = 'ws://localhost:8000';
-    window.websocket = new WebSocket(wsServer); 
-    websocket.onopen = function (evt) { onOpen(evt) }; 
-    websocket.onclose = function (evt) { onClose(evt) }; 
-    websocket.onmessage = function (evt) { onMessage(evt) }; 
-    websocket.onerror = function (evt) { onError(evt) }; 
-    function onOpen(evt) { 
-        console.log("Connected to WebSocket server."); 
-    } 
-    function onClose(evt) { 
-        console.log("Disconnected"); 
-    } 
-    function onMessage(evt) { 
-        console.log('Retrieved data from server: ' + evt.data); 
-    } 
-    function onError(evt) { 
-        console.log('Error occured: ' + evt); 
-    }
-    $("#action").click(function () {
-        window.websocket.send("hello world");
-    });
-    return;
 
     $("#action").click(function () {
         Client.opTest(client0);
         Client.opTest(client1);
+    });
+    $("#login").click(function () {
+        Client.login(client0);
+        Client.login(client1);
+    });
+    $("#ready").click(function () {
+        Client.ready(client0);
+        Client.ready(client1);
     });
 
     $(document).keydown(function (e) {
@@ -103,8 +89,10 @@ $(function () {
         },
         */
     ]);
+    /*
     Client.login(client0);
     Client.login(client1);
     Client.ready(client0);
     Client.ready(client1);
+    */
 });
