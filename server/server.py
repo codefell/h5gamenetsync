@@ -5,6 +5,7 @@ import random
 import aiomysql
 import sys
 import json
+import time
 import concurrent
 import logging
 import math
@@ -111,6 +112,7 @@ class Server:
         self.startTime = 0
         self.syncFrame = 0
         self.lastSendFrame = 0
+        self.lastSendTime = 0
         self.syncInfo = []
         self.syncSeq = []
         self.players = []
@@ -126,18 +128,20 @@ class Server:
         try:
             while True:
                 await self.update()
-                await asyncio.sleep(Config.frameInterval * 10)
+                await asyncio.sleep(Config.frameInterval * 6)
         except Exception as e:
-            print(traceback.print_exc())
+            logging.debug(traceback.print_exc())
         #except concurrent.futures.CancelledError as e:
         #    raise e
 
     async def onLogin(self, conn, msg):
+        nowTime = time.time()
         playerId = self.getNextPlayerId()
         loginPlayer = Player(conn, playerId, msg["color"])
         self.players.append(loginPlayer)
         await loginPlayer.conn.sendMsg({
             "type": "login",
+            "time": nowTime,
             "id": playerId,
         });
 
@@ -145,21 +149,25 @@ class Server:
             if player.id != playerId:
                 await player.conn.sendMsg({
                     "type": "addPlayer",
+                    "time": nowTime,
                     "playerId": loginPlayer.id,
                     "color": loginPlayer.color,
                 })
                 await loginPlayer.conn.sendMsg({
                     "type": "addPlayer",
+                    "time": nowTime,
                     "playerId": player.id,
                     "color": player.color,
                 })
                 if player.ready:
                     await loginPlayer.conn.sendMsg({
                         "type": "playerReady",
+                        "time": nowTime,
                         "playerInfo": player.getInfo(),
                         "playerId": player.id,
                     })
     async def onReady(self, conn, msg):
+        nowTime = time.time()
         player = Util.getInList(self.players, msg["id"])
         player.setPlayerInfo(msg["playerInfo"])
         player.ready = True
@@ -170,16 +178,18 @@ class Server:
             if player.id != msg["id"]:
                 await player.conn.sendMsg({
                     "type": "playerReady",
+                    "time": nowTime,
                     "playerInfo": msg["playerInfo"],
                     "playerId": msg["id"],
                 })
 
         if readyNum == 2:
             self.start = True
-            self.startTime = loop.time()
-            print("------------ server start -------------")
+            self.startTime = nowTime
+            logging.debug("server start at %s" % nowTime)
             await Connection.sendMsgAll({
-                "type": "start"
+                "type": "start",
+                "time": nowTime,
             })
     
     async def onOp(self, conn, msg):
@@ -191,9 +201,26 @@ class Server:
     async def update(self):
         if not self.start:
             return
-        frameNum = int((loop.time() - self.startTime) / Config.frameInterval)
+        nowTime = time.time()
+        frameNum = int((nowTime - self.startTime) / Config.frameInterval)
+        '''
+        if len(self.syncInfo) > 0:
+            await Connection.sendMsgAll({
+                "type": "sync",
+                "time": nowTime,
+                "frameIndex": frameNum,
+                "syncInfo": self.syncInfo,
+            })
+            self.syncSeq.append({
+                "frameIndex": frameNum,
+                "syncInfo": self.syncInfo,
+            })
+            self.syncInfo = []
+        '''
         if frameNum >= (self.lastSendFrame + 6):
             self.lastSendFrame = frameNum
+            logging.debug("send sync msg, now time %s, frameNum %s, syncInfo %s" % (nowTime, frameNum, str(self.syncInfo)))
+            self.lastSendTime = nowTime
             await Connection.sendMsgAll({
                 "type": "sync",
                 "frameIndex": frameNum,
@@ -207,7 +234,8 @@ class Server:
                 })
                 self.syncInfo = []
     def eval(self):
-        frameNum = int((loop.time() - self.startTime) / Config.frameInterval)
+        nowTime = time.time()
+        frameNum = int((nowTime - self.startTime) / Config.frameInterval)
         frameNum = frameNum - (frameNum % 6)
         deltaFrame = frameNum - self.syncFrame
         for i in range(0, deltaFrame):
@@ -246,7 +274,7 @@ class Connection:
         await asyncio.wait([self.sc, self.rc])
         await self.websocket.close()
         Connection.allConnection.remove(self)
-        print("conn loop end")
+        logging.debug("conn loop end")
 
     async def sendMsg(self, msg):
         msg = json.dumps(msg)
@@ -256,12 +284,14 @@ class Connection:
         try:
             while True:
                 msg = await self.sendQueue.get()
-                print("send " + msg)
+                logging.debug("send " + msg)
                 await self.websocket.send(msg);
         except websockets.exceptions.ConnectionClosed as e:
-            print("sendCoro close")
+            pass
+            logging.debug("sendCoro close")
         except Exception as e:
-            print(e)
+            pass
+            logging.debug(e)
         finally:
             self.rc.cancel()
 
@@ -271,14 +301,16 @@ class Connection:
                 msg = await self.websocket.recv()
                 await self.onRecvMsg(msg)
         except websockets.exceptions.ConnectionClosed as e:
-            print("recvCoro close")
+            pass
+            logging.debug("recvCoro close")
         except Exception as e:
-            print(e)
+            pass
+            logging.debug(e)
         finally:
             self.sc.cancel()
 
     async def onRecvMsg(self, msg):
-        print("recv msg", msg)
+        logging.debug("recv msg %s" %(str(msg)))
         msg = json.loads(msg)
         methodName = "on" + msg["type"].capitalize()
         method = getattr(Server.getInst(), methodName)
@@ -291,8 +323,8 @@ async def serve(websocket, path):
 
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
-logging.basicConfig(level=logging.DEBUG)
-start_server = websockets.serve(serve, '192.168.1.10', 8000)
+logging.basicConfig(filename="server.log", level=logging.DEBUG)
+start_server = websockets.serve(serve, '192.168.163.128', 8000)
 loop.run_until_complete(start_server)
 server_coro = asyncio.ensure_future(Server.getInst().loop())
 
@@ -307,7 +339,7 @@ except KeyboardInterrupt as e:
         loop.run_until_complete(asyncio.wait(cos))
     server_coro.cancel()
     loop.run_until_complete(asyncio.wait_for(server_coro, None))
-    print("exit")
+    logging.debug("exit")
 
 '''
 pool = None
@@ -325,7 +357,7 @@ async def test_db_pool():
             while True:
                 r = await cur.fetchone()
                 if not r: break
-                print(str(r))
+                logger.debug(str(r))
 async def close_db_pool():
     pool.close()
     await pool.wait_closed()

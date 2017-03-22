@@ -24,7 +24,7 @@ $(function () {
         else if (key == "I") {
             for (var i in Client.allClient) {
                 var client = Client.allClient[i];
-                console.log("client", client.divId, client.game.syncFrame);
+                console.log("client", client.divId, client.game.syncFrame, client.game.simuFrame, client.game.startTime);
                 for (var j in client.game.players.list) {
                     var player = client.game.players.list[j];
                     console.log("player", player.id);
@@ -37,17 +37,6 @@ $(function () {
                     }
                 }
             }
-            var server = Server.getInst();
-            Server.eval(server);
-            console.log("server", server.syncFrame);
-            for (var i in server.players.list) {
-                var player = server.players.list[i];
-                console.log("player", player.id);
-                for (var k in player.units.list) {
-                    var unit = player.units.list[k];
-                    console.log("unit", unit.id, JSON.stringify(unit.pos));
-                }
-            }
         }
     });
 
@@ -58,7 +47,7 @@ $(function () {
     */
 
     var client0 = Client.create("WebGLoutput0", Math.floor(0xFFFFFF * Math.random()));
-    //var client1 = Client.create("WebGLoutput1", 0x7fcccc);
+    //var client1 = Client.create("WebGLoutput1", Math.floor(0xFFFFFF * Math.random()));
         /*
     Client.addLocalUnits(client0, [
         {

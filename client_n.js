@@ -24,7 +24,7 @@ var Client = {
                 };
             }(client));
         */
-        var conn = new WebSocket("ws://192.168.1.10:8000");
+        var conn = new WebSocket("ws://192.168.163.128:8000");
         conn.client = client;
         conn.onopen = function (evt) {
             var client = evt.target.client;
@@ -32,6 +32,7 @@ var Client = {
         };
         conn.onclose = function (evt) {
             var client = evt.target.client;
+            client.game.start = false;
             console.log("close ", client.divId);
         };
         conn.onmessage = function (evt) {
@@ -49,7 +50,6 @@ var Client = {
         client.updateHandle = updateHandle;
 
         $('#'+divId).click(function (e) {
-            console.log("send new direction");
             var rect0 = $(this)[0].getBoundingClientRect();
             var x = Math.floor(e.clientX - rect0.left);
             var y = Math.floor(e.clientY - rect0.top);
@@ -145,8 +145,7 @@ var Client = {
         var height = client.height;
         Client.addLocalUnits(client, [{
             x: 10 + -width/2 + (width - 20) * Math.random(),
-            y: 10 + -height/2 + (height- 20) * Math.random(),
-            y: 20,
+            x: 10 + -height/2 + (height - 20) * Math.random(),
             speed: 30,
             dx: 0,
             dy: 1,
@@ -189,7 +188,7 @@ var ClientGame = {
     create: function (client) {
         var game = {
             client: client,
-            start: true,
+            start: false,
             syncFrame: 0,
             simuFrame: 0,
             startTime: UpdateHandles.time,
@@ -259,20 +258,31 @@ var ClientGame = {
     },
 
     update: function (cg) {
+        if (!cg.start) {
+            MapList.call(cg.players, ClientPlayer.update);
+            return;
+        }
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
 
         if (cg.syncInfo.length > 0) {
-            for (var i in cg.syncInfo) {
-                var deltaSyncFrame = cg.syncInfo[i].syncFrame - cg.syncFrame;
+            while (cg.syncInfo.length > 0) {
+                var toSyncFrame = Math.min(cg.syncInfo[0].syncFrame, currFrame);
+                var deltaSyncFrame = toSyncFrame - cg.syncFrame;
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
                     cg.syncFrame++;
                 }
-                for (var j in cg.syncInfo[i].allPlayerSyncInfo) {
-                    var playerSyncInfo = cg.syncInfo[i].allPlayerSyncInfo[j];
-                    var player = MapList.get(cg.players, playerSyncInfo.playerId);
-                    ClientPlayer.setSyncInfo(player, playerSyncInfo);
+                if (toSyncFrame == cg.syncInfo[0].syncFrame) {
+                    for (var j in cg.syncInfo[0].allPlayerSyncInfo) {
+                        var playerSyncInfo = cg.syncInfo[0].allPlayerSyncInfo[j];
+                        var player = MapList.get(cg.players, playerSyncInfo.playerId);
+                        ClientPlayer.setSyncInfo(player, playerSyncInfo);
+                    }
+                    cg.syncInfo.shift();
+                }
+                else {
+                    break;
                 }
             }
             //limit simu frame num, (simuFrame - syncFrame) < limitFrameNum
@@ -288,7 +298,6 @@ var ClientGame = {
 
             MapList.call(cg.players, ClientPlayer.show1f, 0);
             MapList.call(cg.players, ClientPlayer.setCompensate);
-            cg.syncInfo = [];
         }
         else {
             var deltaSimuFrame = currFrame - cg.simuFrame;
@@ -431,7 +440,6 @@ var ClientUnit = {
             cu.sprite.quaternion.copy(quaternion);
         }
         if (syncInfo.status) {
-            console.log("change status");
             cu.sync.status = syncInfo.status;
         }
         if (syncInfo.speed) {
@@ -527,8 +535,8 @@ var ClientUnit = {
     },
 
     update: function (cu) {
-        cu.sprite.position.x = cu.show.pos.x;
-        cu.sprite.position.y = cu.show.pos.y;
+        cu.sprite.position.x = cu.sync.pos.x;
+        cu.sprite.position.y = cu.sync.pos.y;
         //Sprite.update(cu.sprite);
     },
 };
