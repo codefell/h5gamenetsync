@@ -37,6 +37,7 @@ var Client = {
         };
         conn.onmessage = function (evt) {
             var client = evt.target.client;
+            console.log("client recv msg at", util.time(), evt.data);
             var msg = JSON.parse(evt.data);
             var method = "on" + util.headCharUp(msg.type);
             Client[method](client, msg);
@@ -204,6 +205,9 @@ var ClientGame = {
     },
 
     start: function (cg) {
+        /*
+        console.log("client", cg.playerId, "start at ", UpdateHandles.time);
+        */
         cg.start = true;
         cg.startTime = UpdateHandles.time;
         MapList.sortOnId(cg.players);
@@ -228,6 +232,17 @@ var ClientGame = {
     },
 
     sync: function (cg, syncFrame, allPlayerSyncInfo) {
+        /*
+        console.log("client",
+            cg.playerId,
+            "recv sync msg",
+            "at time",
+            UpdateHandles.time,
+            "server Index",
+            syncFrame,
+            "syncInfo",
+            JSON.stringify(allPlayerSyncInfo));
+        */
         cg.syncInfo.push({
             syncFrame: syncFrame,
             allPlayerSyncInfo: allPlayerSyncInfo,
@@ -265,15 +280,37 @@ var ClientGame = {
         var currFrame = Math.floor((UpdateHandles.time - cg.startTime) 
             / config.frameInterval);
 
+        /*
+        console.log("client",
+            cg.playerId,
+            "update currtime",
+            UpdateHandles.time,
+            "currFrame",
+            currFrame);;
+        */
+
         if (cg.syncInfo.length > 0) {
             while (cg.syncInfo.length > 0) {
                 var toSyncFrame = Math.min(cg.syncInfo[0].syncFrame, currFrame);
                 var deltaSyncFrame = toSyncFrame - cg.syncFrame;
+                /*
+                console.log("client",
+                    cg.playerId,
+                    "syncinfo",
+                    JSON.stringify(cg.syncInfo[0]),
+                    "lastSyncFrame",
+                    cg.syncFrame,
+                    "deltaFrame",
+                    deltaSyncFrame);
+                */
                 for (var j = 0; j < deltaSyncFrame; j++) {
                     MapList.call(cg.players, ClientPlayer.sync1f);
                     cg.syncFrame++;
                 }
                 if (toSyncFrame == cg.syncInfo[0].syncFrame) {
+                    /*
+                    console.log("client", cg.playerId, "sync set player info");
+                    */
                     for (var j in cg.syncInfo[0].allPlayerSyncInfo) {
                         var playerSyncInfo = cg.syncInfo[0].allPlayerSyncInfo[j];
                         var player = MapList.get(cg.players, playerSyncInfo.playerId);
@@ -290,6 +327,9 @@ var ClientGame = {
             cg.simuFrame = cg.syncFrame;
             var deltaSimuFrame = currFrame - cg.syncFrame;
             deltaSimuFrame = Math.min(deltaSimuFrame, 6);
+            /*
+            console.log("client", cg.playerId, "simu deltaFrame", deltaSimuFrame);
+            */
             for (var i = 0; i < deltaSimuFrame; i++) {
                 MapList.call(cg.players, ClientPlayer.simu1f);
                 ClientGame.simuCollide(cg);
@@ -301,6 +341,9 @@ var ClientGame = {
         }
         else {
             var deltaSimuFrame = currFrame - cg.simuFrame;
+            /*
+            console.log("client", cg.playerId, "> simu deltaFrame", deltaSimuFrame);
+            */
             deltaSimuFrame = Math.min(deltaSimuFrame, 6);
             for (var i = 0; i < deltaSimuFrame; i++) {
                 //which should be evaled first, pos or ai
@@ -537,6 +580,11 @@ var ClientUnit = {
     update: function (cu) {
         cu.sprite.position.x = cu.sync.pos.x;
         cu.sprite.position.y = cu.sync.pos.y;
+        /*
+        if (cu.player.game.start) {
+            console.log("client", cu.player.id, "unit", cu.id, "real time pos", JSON.stringify(cu.sync.pos));
+        }
+        */
         //Sprite.update(cu.sprite);
     },
 };

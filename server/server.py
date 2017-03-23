@@ -10,6 +10,7 @@ import concurrent
 import logging
 import math
 import traceback
+import socket
 
 class Util:
     def getInList(list, id):
@@ -128,9 +129,9 @@ class Server:
         try:
             while True:
                 await self.update()
-                await asyncio.sleep(Config.frameInterval * 6)
+                await asyncio.sleep(Config.frameInterval * 120)
         except Exception as e:
-            logging.debug(traceback.print_exc())
+            logging.getLogger("server").debug(traceback.print_exc())
         #except concurrent.futures.CancelledError as e:
         #    raise e
 
@@ -186,7 +187,7 @@ class Server:
         if readyNum == 2:
             self.start = True
             self.startTime = nowTime
-            logging.debug("server start at %s" % nowTime)
+            logging.getLogger("server").debug("server start at %s" % nowTime)
             await Connection.sendMsgAll({
                 "type": "start",
                 "time": nowTime,
@@ -217,9 +218,9 @@ class Server:
             })
             self.syncInfo = []
         '''
-        if frameNum >= (self.lastSendFrame + 6):
+        if frameNum >= (self.lastSendFrame + 120):
             self.lastSendFrame = frameNum
-            logging.debug("send sync msg, now time %s, frameNum %s, syncInfo %s" % (nowTime, frameNum, str(self.syncInfo)))
+            logging.getLogger("server").debug("send sync msg, now time %s, frameNum %s, syncInfo %s" % (nowTime, frameNum, str(self.syncInfo)))
             self.lastSendTime = nowTime
             await Connection.sendMsgAll({
                 "type": "sync",
@@ -274,24 +275,25 @@ class Connection:
         await asyncio.wait([self.sc, self.rc])
         await self.websocket.close()
         Connection.allConnection.remove(self)
-        logging.debug("conn loop end")
+        logging.getLogger("server").debug("conn loop end")
 
     async def sendMsg(self, msg):
         msg = json.dumps(msg)
+        logging.getLogger("connection").debug("send msg %s at %s" % (msg, time.time()))
         await self.sendQueue.put(msg)
 
     async def sendCoro(self):
         try:
             while True:
                 msg = await self.sendQueue.get()
-                logging.debug("send " + msg)
+                logging.getLogger("server").debug("send " + msg)
                 await self.websocket.send(msg);
         except websockets.exceptions.ConnectionClosed as e:
             pass
-            logging.debug("sendCoro close")
+            logging.getLogger("server").debug("sendCoro close")
         except Exception as e:
             pass
-            logging.debug(e)
+            logging.getLogger("server").debug(e)
         finally:
             self.rc.cancel()
 
@@ -302,15 +304,15 @@ class Connection:
                 await self.onRecvMsg(msg)
         except websockets.exceptions.ConnectionClosed as e:
             pass
-            logging.debug("recvCoro close")
+            logging.getLogger("server").debug("recvCoro close")
         except Exception as e:
             pass
-            logging.debug(e)
+            logging.getLogger("server").debug(e)
         finally:
             self.sc.cancel()
 
     async def onRecvMsg(self, msg):
-        logging.debug("recv msg %s" %(str(msg)))
+        logging.getLogger("server").debug("recv msg %s" %(str(msg)))
         msg = json.loads(msg)
         methodName = "on" + msg["type"].capitalize()
         method = getattr(Server.getInst(), methodName)
@@ -318,11 +320,13 @@ class Connection:
         #await Connection.sendMsgAll(msg)
 
 async def serve(websocket, path):
+    sock = websocket.writer.get_extra_info("socket")
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
     conn = Connection(websocket)
     await conn.loop()
 
 loop = asyncio.get_event_loop()
-loop.set_debug(True)
+#loop.set_debug(True)
 logging.basicConfig(filename="server.log", level=logging.DEBUG)
 start_server = websockets.serve(serve, '192.168.163.128', 8000)
 loop.run_until_complete(start_server)
@@ -339,7 +343,7 @@ except KeyboardInterrupt as e:
         loop.run_until_complete(asyncio.wait(cos))
     server_coro.cancel()
     loop.run_until_complete(asyncio.wait_for(server_coro, None))
-    logging.debug("exit")
+    logging.getLogger("server").debug("exit")
 
 '''
 pool = None
