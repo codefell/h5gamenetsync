@@ -37,7 +37,7 @@ var Client = {
         };
         conn.onmessage = function (evt) {
             var client = evt.target.client;
-            console.log("client recv msg at", util.time(), evt.data);
+            //console.log("client recv msg at", util.time(), evt.data);
             var msg = JSON.parse(evt.data);
             var method = "on" + util.headCharUp(msg.type);
             Client[method](client, msg);
@@ -578,8 +578,8 @@ var ClientUnit = {
     },
 
     update: function (cu) {
-        cu.sprite.position.x = cu.sync.pos.x;
-        cu.sprite.position.y = cu.sync.pos.y;
+        cu.sprite.position.x = cu.simu.pos.x;
+        cu.sprite.position.y = cu.simu.pos.y;
         /*
         if (cu.player.game.start) {
             console.log("client", cu.player.id, "unit", cu.id, "real time pos", JSON.stringify(cu.sync.pos));

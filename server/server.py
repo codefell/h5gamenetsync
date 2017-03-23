@@ -129,7 +129,7 @@ class Server:
         try:
             while True:
                 await self.update()
-                await asyncio.sleep(Config.frameInterval * 120)
+                await asyncio.sleep(Config.frameInterval * 6)
         except Exception as e:
             logging.getLogger("server").debug(traceback.print_exc())
         #except concurrent.futures.CancelledError as e:
@@ -218,7 +218,7 @@ class Server:
             })
             self.syncInfo = []
         '''
-        if frameNum >= (self.lastSendFrame + 120):
+        if frameNum >= (self.lastSendFrame + 6):
             self.lastSendFrame = frameNum
             logging.getLogger("server").debug("send sync msg, now time %s, frameNum %s, syncInfo %s" % (nowTime, frameNum, str(self.syncInfo)))
             self.lastSendTime = nowTime
@@ -279,7 +279,7 @@ class Connection:
 
     async def sendMsg(self, msg):
         msg = json.dumps(msg)
-        logging.getLogger("connection").debug("send msg %s at %s" % (msg, time.time()))
+        #logging.getLogger("connection").debug("send msg %s at %s" % (msg, time.time()))
         await self.sendQueue.put(msg)
 
     async def sendCoro(self):
