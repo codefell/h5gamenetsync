@@ -7,22 +7,24 @@ function time() {
 }
 
 function makeRect(x, y, width, height, color) {
-    var planeGeometry = new THREE.PlaneGeometry(width, height);
+    var planeGeometry = new THREE.PlaneBufferGeometry(width, height);
     var planeMaterial = new THREE.MeshBasicMaterial({color: color});
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.position.x = x;
     plane.position.y = y;
     plane.position.z = 0;
+    global.scene.add(plane);
     return plane;
 }
 
 function makeCircle(x, y, radius, color) {
-    var geometry = new THREE.CircleGeometry(radius, 36);
+    var geometry = new THREE.CircleBufferGeometry(radius, 36);
     var material = new THREE.MeshBasicMaterial({color: color});
     var circle = new THREE.Mesh( geometry, material );
     circle.position.x = x;
     circle.position.y = y;
     circle.position.z = 0;
+    global.scene.add(circle);
     return circle;
 }
 
