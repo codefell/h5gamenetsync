@@ -106,11 +106,9 @@ var UpdateHandles = {
         }
     },
     update: function () {
-        //test
         UpdateHandles.time = time();
         UpdateHandles.deltaTime = 
             UpdateHandles.time - UpdateHandles.lastUpdateTime;
-        requestAnimationFrame(UpdateHandles.update);
         
         for (i in UpdateHandles.handles) {
             handle = UpdateHandles.handles[i];
@@ -153,5 +151,5 @@ function initEvent() {
 
 $(function () {
     UpdateHandles.init();
-    UpdateHandles.update();
+    setInterval(UpdateHandles.update, 1000/60);
 });

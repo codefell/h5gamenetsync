@@ -13,6 +13,7 @@ $(function () {
         ,	b2MassData = Box2D.Collision.Shapes.b2MassData
         ,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
         ,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+        ,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
         ,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
         ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
         ;
@@ -46,15 +47,27 @@ $(function () {
     body.CreateFixture(fixtureDef);
     bodySprite = makeRect(-2, 5, 1, 1, 0x00ff00);
 
+    bodyDef.position.Set(-2.1, 8);
+    var circleBody = global.world.CreateBody(bodyDef);
+    fixtureDef.shape = new b2CircleShape(0.3);
+    circleBody.CreateFixture(fixtureDef);
+    circleSprite = makeCircle(-2.1, 7, 0.3, 0x00ff00);
+
     UpdateHandles.addHandle(function () {
         if (UpdateHandles.deltaTime <= 0) {
             return;
         }
-        global.world.Step(UpdateHandles.deltaTime, 6, 2);
+        global.world.Step(1/60, 6, 2);
         var pos = body.GetPosition();
         var angle = body.GetAngle();
         bodySprite.position.x = pos.x;
         bodySprite.position.y = pos.y;
         bodySprite.rotation.z = angle;
+
+        var pos = circleBody.GetPosition();
+        var angle = circleBody.GetAngle();
+        circleSprite.position.x = pos.x;
+        circleSprite.position.y = pos.y;
+        circleSprite.rotation.z = angle;
     });
 });
