@@ -16,12 +16,10 @@ $(function () {
         ,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
         ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
         ;
-    var environment = new b2AABB();
-    environment.lowerBound = new b2Vec2(-global.width / 2, -global.height / 2);
-    environment.upperBound = new b2Vec2(global.width / 2, global.height / 2);
     var gravity = new b2Vec2(0, -9.8);
     var doSleep = true;
     global.world = new b2World(gravity, doSleep);
+    console.log(global.world);
 
     var groundBodyDef = new b2BodyDef;
     groundBodyDef.position.Set(0, -0.25);
