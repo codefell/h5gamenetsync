@@ -2,7 +2,6 @@ $(function () {
     initScene("WebGLoutput");
     initEvent();
 
-/*
          var   b2Vec2 = Box2D.Common.Math.b2Vec2
             ,  b2AABB = Box2D.Collision.b2AABB
          	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
@@ -16,9 +15,11 @@ $(function () {
          	,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
             ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
             ;
-            */
+
     makeCircle(0, 0, 1, 0xff0000);
     makeRect(5, 5, 1, 1, 0x00ff00);
+    makeRect(-5, -5, 1, 1, 0x00ff00);
+    makeCircle(0, 5, 1, 0xff0000);
     /*
     var environment = new b2AABB();
     environment.lowerBound = new b2Vec2(-global.width / 2, -global.height / 2);
