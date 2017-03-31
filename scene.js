@@ -1,32 +1,42 @@
+var global = {};
+
+function makeCircle(x, y, r, color) {
+    // create the ground plane
+    var geometry = new THREE.CircleGeometry(r, 36);
+    var material = new THREE.MeshBasicMaterial({color: color, transparent: true, opacity: 0.5});
+    var circle = new THREE.Mesh(geometry, material);
+
+    // rotate and position the plane
+    //plane.rotation.x = -0.5 * Math.PI;
+    circle.position.x = x;
+    circle.position.y = y;
+    circle.position.z = 0;
+
+    // add the plane to the scene
+    global.scene.add(circle);
+    return {r: r, x: x, y: y, sprite: circle};
+}
+
 function initScene(eid) {
 
     // create a scene, that will hold all our elements such as objects, cameras and lights.
     var scene = new THREE.Scene();
+    global.scene = scene;
+    var je = $("#" + eid);
+    var width = je.width();
+    var height = je.height();
+    global.width = width;
+    global.height = height;
 
     // create a camera, which defines where we're looking at.
     //var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    var camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 1000);
+    var camera = new THREE.OrthographicCamera(-width/2, width/2, height/2, -height/2, 1, 1000);
 
     // create a render and set the size
     var renderer = new THREE.WebGLRenderer();
-    renderer.setClearColor(new THREE.Color(0xEEEEEE));
+    renderer.setClearColor(new THREE.Color(0x0));
     //renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setSize(200, 200);
-
-    // create the ground plane
-    var planeGeometry = new THREE.PlaneGeometry(100, 100);
-    var planeMaterial = new THREE.MeshBasicMaterial({color: 0xcccccc});
-    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-    // rotate and position the plane
-    //plane.rotation.x = -0.5 * Math.PI;
-    plane.position.x = 0;
-    plane.position.y = 0;
-    plane.position.z = 0;
-
-    // add the plane to the scene
-    scene.add(plane);
-
+    renderer.setSize(width, height);
 
     // position and point the camera to the center of the scene
     camera.position.x = 0;
