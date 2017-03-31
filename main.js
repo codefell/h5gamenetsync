@@ -20,6 +20,7 @@ function makeBoundBox()
 {
     var bodyDef = new b2BodyDef;
     bodyDef.type = b2Body.b2_dynamicBody;
+    bodyDef.allowSleep = false;
     bodyDef.position.Set(0, 0);
     var body = global.world.CreateBody(bodyDef);
     var fixDef = new b2FixtureDef;
@@ -58,11 +59,22 @@ function makeGround() {
     var bodyDef = new b2BodyDef;
     bodyDef.position.Set(0, 0);
     var body = global.world.CreateBody(bodyDef);
-    global.groundObj = {body2D: body};
+    var fixDef = new b2FixtureDef;
+    fixDef.shape = new b2PolygonShape;
+    fixDef.shape.SetAsBox(0.2, 0.2);
+    fixDef.density = 1;
+    fixDef.friction = 0.3;
+    fixDef.restitution = 0.5;
+    body.CreateFixture(fixDef);
+    var groundObj3D = makeRect(0, 0, 0.4, 0.4, 0xffff00);
+    global.groundObj = {obj3D: groundObj3D, body2D: body};
 }
 
 function makeJoint() {
     var jointDef = new b2RevoluteJointDef;
+    jointDef.enableMotor = true;
+    jointDef.motorSpeed = b2_pi / 18;
+    jointDef.maxMotorTorque = 100000;
     jointDef.bodyA = global.groundObj.body2D;
     jointDef.bodyB = global.boundObj.body2D;
     jointDef.anchorPoint = global.groundObj.body2D.GetWorldCenter();
@@ -119,6 +131,12 @@ $(function () {
         circleSprite.position.x = pos.x;
         circleSprite.position.y = pos.y;
         circleSprite.rotation.z = angle;
+
+        var pos = global.groundObj.body2D.GetPosition();
+        var angle = global.groundObj.body2D.GetAngle();
+        global.groundObj.obj3D.position.x = pos.x;
+        global.groundObj.obj3D.position.y = pos.y;
+        global.groundObj.obj3D.rotation.z = angle;
 
         var pos = global.boundObj.body2D.GetPosition();
         var angle = global.boundObj.body2D.GetAngle();
