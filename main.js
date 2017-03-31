@@ -110,7 +110,7 @@ function makeCircleObj(x, y, r, vx, vy, color) {
 function makeJoint() {
     var jointDef = new b2RevoluteJointDef;
     jointDef.enableMotor = true;
-    jointDef.motorSpeed = b2_pi / 18;
+    jointDef.motorSpeed = b2_pi / 9;
     jointDef.maxMotorTorque = 100000;
     jointDef.bodyA = global.groundObj.body2D;
     jointDef.bodyB = global.boundObj.body2D;
@@ -132,12 +132,13 @@ $(function () {
     makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
     makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
     makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
+    makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
+    makeCircleObj(0, 2, 0.5, 0, 0, 0xff0000);
     makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
-    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
-    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
+    makeCircleObj(0, 2, 0.5, 0, 0, 0xff0000);
     makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
 
-    var stepNum = 600;
+    var stepNum = 1200;
     UpdateHandles.addHandle(function () {
         if (UpdateHandles.deltaTime <= 0) {
             return;
