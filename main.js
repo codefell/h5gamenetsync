@@ -26,7 +26,7 @@ function makeBoundBox()
     var fixDef = new b2FixtureDef;
     fixDef.density = 1;
     fixDef.friction = 0.3;
-    fixDef.restitution = 0.5;
+    fixDef.restitution = 1;
 
     fixDef.shape = new b2PolygonShape;
 
@@ -53,6 +53,7 @@ function makeBoundBox()
     boundObj3D.add(leftBoundSprite);
     global.scene.add(boundObj3D);
     global.boundObj = {obj3D: boundObj3D, body2D: body};
+    global.obj.push(global.boundObj);
 }
 
 function makeGround() {
@@ -68,6 +69,42 @@ function makeGround() {
     body.CreateFixture(fixDef);
     var groundObj3D = makeRect(0, 0, 0.4, 0.4, 0xffff00);
     global.groundObj = {obj3D: groundObj3D, body2D: body};
+    global.obj.push(global.groundObj);
+}
+
+function makeRectObj(x, y, w, h, vx, vy, angle, color) {
+    var bodyDef = new b2BodyDef;
+    bodyDef.type = b2Body.b2_dynamicBody;
+    bodyDef.position.Set(x, y);
+    bodyDef.linearVelocity.Set(vx, vy);
+    bodyDef.angle = angle;
+    var body = global.world.CreateBody(bodyDef);
+    var fixDef = new b2FixtureDef;
+    fixDef.shape = new b2PolygonShape;
+    fixDef.shape.SetAsBox(w/2, h/2);
+    fixDef.density = 1;
+    fixDef.friction = 0.3;
+    fixDef.restitution = 0.5;
+    body.CreateFixture(fixDef);
+    body.ResetMassData();
+    bodySprite = makeRect(x, y, w, h, color);
+    global.obj.push({obj3D: bodySprite, body2D: body});
+}
+
+function makeCircleObj(x, y, r, vx, vy, color) {
+    var bodyDef = new b2BodyDef;
+    bodyDef.type = b2Body.b2_dynamicBody;
+    bodyDef.position.Set(x, y);
+    bodyDef.linearVelocity.Set(vx, vy);
+    var body = global.world.CreateBody(bodyDef);
+    var fixDef = new b2FixtureDef;
+    fixDef.shape = new b2CircleShape(r);
+    fixDef.density = 1;
+    fixDef.friction = 0.3;
+    fixDef.restitution = 0.5;
+    body.CreateFixture(fixDef);
+    bodySprite = makeCircle(x, y, r, color);
+    global.obj.push({obj3D: bodySprite, body2D: body});
 }
 
 function makeJoint() {
@@ -92,56 +129,31 @@ $(function () {
     makeGround();
     makeBoundBox();
     makeJoint();
+    makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
+    makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
+    makeRectObj(0, 2, 1, 1, 0, 0, b2_pi / 3, 0x00ff00);
+    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
+    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
+    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
+    makeCircleObj(0, 2, 1, 0, 0, 0xff0000);
 
-    var bodyDef = new b2BodyDef;
-    bodyDef.type = b2Body.b2_dynamicBody;
-    bodyDef.position.Set(-2, 5);
-    bodyDef.angle = b2_pi / 3;
-    var body = global.world.CreateBody(bodyDef);
-    var fixDef = new b2FixtureDef;
-    fixDef.shape = new b2PolygonShape;
-    fixDef.shape.SetAsBox(0.5, 0.5);
-    fixDef.density = 1;
-    fixDef.friction = 0.3;
-    fixDef.restitution = 0.5;
-    body.CreateFixture(fixDef);
-    body.ResetMassData();
-    bodySprite = makeRect(-2, 5, 1, 1, 0x00ff00);
-
-    bodyDef.position.Set(-2.1, 8);
-    var circleBody = global.world.CreateBody(bodyDef);
-    fixDef.shape = new b2CircleShape(0.3);
-    circleBody.CreateFixture(fixDef);
-    circleSprite = makeCircle(-2.1, 7, 0.3, 0x00ff00);
-
+    var stepNum = 600;
     UpdateHandles.addHandle(function () {
         if (UpdateHandles.deltaTime <= 0) {
             return;
         }
-        global.world.Step(1/60, 6, 2);
+        if (stepNum-- > 0) {
+            global.world.Step(1/60, 6, 2);
 
-        var pos = body.GetPosition();
-        var angle = body.GetAngle();
-        bodySprite.position.x = pos.x;
-        bodySprite.position.y = pos.y;
-        bodySprite.rotation.z = angle;
-
-        var pos = circleBody.GetPosition();
-        var angle = circleBody.GetAngle();
-        circleSprite.position.x = pos.x;
-        circleSprite.position.y = pos.y;
-        circleSprite.rotation.z = angle;
-
-        var pos = global.groundObj.body2D.GetPosition();
-        var angle = global.groundObj.body2D.GetAngle();
-        global.groundObj.obj3D.position.x = pos.x;
-        global.groundObj.obj3D.position.y = pos.y;
-        global.groundObj.obj3D.rotation.z = angle;
-
-        var pos = global.boundObj.body2D.GetPosition();
-        var angle = global.boundObj.body2D.GetAngle();
-        global.boundObj.obj3D.position.x = pos.x;
-        global.boundObj.obj3D.position.y = pos.y;
-        global.boundObj.obj3D.rotation.z = angle;
+            for (var i in global.obj) {
+                var body = global.obj[i].body2D;
+                var bodySprite = global.obj[i].obj3D;
+                var pos = body.GetPosition();
+                var angle = body.GetAngle();
+                bodySprite.position.x = pos.x;
+                bodySprite.position.y = pos.y;
+                bodySprite.rotation.z = angle;
+            }
+        }
     });
 });

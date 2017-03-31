@@ -1,5 +1,6 @@
 var global = {
     scale: 15, 
+    obj: [],
 };
 
 function time() {
