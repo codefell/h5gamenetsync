@@ -1,19 +1,21 @@
 var global = {
-    scale: 30
+    scale: 15, 
 };
 
 function time() {
     return (new Date()).getTime() / 1000;
 }
 
-function makeRect(x, y, width, height, color) {
+function makeRect(x, y, width, height, color, notAdd) {
     var planeGeometry = new THREE.PlaneGeometry(width, height);
     var planeMaterial = new THREE.MeshBasicMaterial({color: color});
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.position.x = x;
     plane.position.y = y;
     plane.position.z = 0;
-    global.scene.add(plane);
+    if (!notAdd) {
+        global.scene.add(plane);
+    }
     return plane;
 }
 
