@@ -1,8 +1,18 @@
 $(function () {
     initScene("WebGLoutput");
     initEvent();
-    makeLine(0, 0, 100, 100, 0xff0000, true);
-    makeHexagon(-100, 100, 50, 0x00ff00, true);
+    global.ox = -global.width / 2 + 10;
+    global.oy = global.height / 2 - 10;
+    global.hr = 40;
+    var row = 7;
+    var col = 8;
+    for (var i = 0; i < row; i++) {
+        var n = (i % 2 == 0) ? col : col - 1;
+        for (var j = 0; j < n; j++) {
+            drawHexagon(i, j);
+        }
+    }
+
     UpdateHandles.addHandle(function () {
         if (global.event.keydown) {
             console.log("key down", global.event.key);

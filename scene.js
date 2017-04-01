@@ -6,7 +6,7 @@ function makeLine(x0, y0, x1, y1, color, addToScene) {
     var geometry = new THREE.Geometry();
     geometry.vertices.push(new THREE.Vector3(x0, y0, 0));
     geometry.vertices.push(new THREE.Vector3(x1, y1, 0));
-    var material = new THREE.LineBasicMaterial({color: color});
+    var material = new THREE.LineBasicMaterial({color: color, linewidth: 3});
     var line = new THREE.Line(geometry, material);
     if (addToScene) {
         global.scene.add(line);
