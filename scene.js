@@ -1,6 +1,38 @@
 var global = {
     event: {},
 };
+
+function makeLine(x0, y0, x1, y1, color, addToScene) {
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(new THREE.Vector3(x0, y0, 0));
+    geometry.vertices.push(new THREE.Vector3(x1, y1, 0));
+    var material = new THREE.LineBasicMaterial({color: color});
+    var line = new THREE.Line(geometry, material);
+    if (addToScene) {
+        global.scene.add(line);
+    }
+    return line;
+}
+
+function makeHexagon(x, y, r, color, addToScene) {
+    var geometry = new THREE.Geometry();
+    var stepAngle = Math.PI * 2 / 6;
+    for (var i = 0; i < 6; i++) {
+        var angle = i * stepAngle;
+        geometry.vertices.push(new THREE.Vector3(r * Math.cos(angle),
+            r * Math.sin(angle), 0));
+    }
+    geometry.vertices.push(new THREE.Vector3(r, 0, 0));
+    var material = new THREE.LineBasicMaterial({color: color});
+    var line = new THREE.Line(geometry, material);
+    line.position.x = x;
+    line.position.y = y;
+    if (addToScene) {
+        global.scene.add(line);
+    }
+    return line;
+}
+
 function initScene(eid) {
 
     // create a scene, that will hold all our elements such as objects, cameras and lights.
@@ -22,21 +54,6 @@ function initScene(eid) {
     renderer.setClearColor(new THREE.Color(0x0));
     //renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setSize(width, height);
-
-    // create the ground plane
-    var planeGeometry = new THREE.PlaneGeometry(100, 100);
-    var planeMaterial = new THREE.MeshBasicMaterial({color: 0xFF0000});
-    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-
-    // rotate and position the plane
-    //plane.rotation.x = -0.5 * Math.PI;
-    plane.position.x = 0;
-    plane.position.y = 0;
-    plane.position.z = 0;
-
-    // add the plane to the scene
-    scene.add(plane);
-
 
     // position and point the camera to the center of the scene
     camera.position.x = 0;
