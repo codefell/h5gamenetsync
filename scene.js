@@ -14,25 +14,6 @@ function makeLine(x0, y0, x1, y1, color, addToScene) {
     return line;
 }
 
-function makeHexagon(x, y, r, color, addToScene) {
-    var geometry = new THREE.Geometry();
-    var stepAngle = Math.PI * 2 / 6;
-    for (var i = 0; i < 6; i++) {
-        var angle = i * stepAngle;
-        geometry.vertices.push(new THREE.Vector3(r * Math.cos(angle),
-            r * Math.sin(angle), 0));
-    }
-    geometry.vertices.push(new THREE.Vector3(r, 0, 0));
-    var material = new THREE.LineBasicMaterial({color: color});
-    var line = new THREE.Line(geometry, material);
-    line.position.x = x;
-    line.position.y = y;
-    if (addToScene) {
-        global.scene.add(line);
-    }
-    return line;
-}
-
 function initScene(eid) {
 
     // create a scene, that will hold all our elements such as objects, cameras and lights.
